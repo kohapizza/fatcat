@@ -15,7 +15,8 @@ struct MainTabView: View {
     @Binding var showFeedButton: Bool
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
-    
+    @State private var isCatPlaced: Bool = false // ★追加: 猫が配置されているかどうかのフラグ
+
     var body: some View {
         ZStack {
             // AR画面（背景）
@@ -25,7 +26,8 @@ struct MainTabView: View {
                 isFishPlaced: $isFishPlaced,
                 showFeedButton: $showFeedButton,
                 statusMessage: $statusMessage,
-                niboshiCount: $niboshiCount
+                niboshiCount: $niboshiCount,
+                isCatPlaced: $isCatPlaced // ★追加: ARViewContainerにフラグを渡す
             )
             .ignoresSafeArea()
             
@@ -40,7 +42,10 @@ struct MainTabView: View {
                 StatusMessageView(statusMessage: $statusMessage)
                 
                 // ボタン類
-                ActionButtons(showFeedButton: $showFeedButton, catIsHungry: cat.isHungry, feedCat: feedCat, niboshiCount: $niboshiCount, statusMessage: $statusMessage)
+                // isCatPlacedがtrueの場合のみActionButtonsを表示
+                if isCatPlaced { // ★変更: 猫が配置されている場合のみボタンを表示
+                    ActionButtons(showFeedButton: $showFeedButton, catIsHungry: cat.isHungry, feedCat: feedCat, niboshiCount: $niboshiCount, statusMessage: $statusMessage)
+                }
             }
         }
     }
@@ -57,7 +62,5 @@ struct MainTabView: View {
         niboshiCount -= 1
         cat.feed()
         statusMessage = "にゃーん！猫が大きくなりました！"
-        // ARViewContainerのhandleTapでshowFeedButtonをtrueにしているので、ここではfalseにする必要はありません。
-        // showFeedButton = false
     }
 }

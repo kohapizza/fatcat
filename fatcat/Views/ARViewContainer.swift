@@ -17,6 +17,7 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var showFeedButton: Bool
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
+    @Binding var isCatPlaced: Bool // ★追加: 猫が配置されているかどうかのフラグ
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
@@ -70,8 +71,9 @@ extension ARViewContainer {
                 placeFish(gesture: gesture)
             } else {
                 // 魚が配置済みの場合、餌やりボタンを表示
-                parent.showFeedButton = true
-                parent.statusMessage = "魚のぬいぐるみを置きました！"
+                // ここでは、魚が配置されたことを知らせるメッセージを表示するだけにします。
+                // 餌やりボタンの表示はisCatPlacedに依存するようにします。
+                parent.statusMessage = "魚のぬいぐるみを置きました！猫が来るのを待っています。"
             }
         }
 
@@ -107,7 +109,6 @@ extension ARViewContainer {
                             DispatchQueue.main.async {
                                 self.parent.isFishPlaced = true
                                 self.parent.statusMessage = "魚のぬいぐるみが配置されました！猫がやってくるかな？"
-                                self.parent.showFeedButton = true
                             }
                             
                             // 魚が配置されてから5秒後に猫を配置
@@ -142,6 +143,8 @@ extension ARViewContainer {
 
                         DispatchQueue.main.async {
                             self.parent.statusMessage = "猫がやってきました！"
+                            self.parent.isCatPlaced = true // ★追加: 猫が配置されたらフラグをtrueに
+                            self.parent.showFeedButton = true // ★追加: 猫が配置されたら餌やりボタンを表示
                         }
                     }
                 })
