@@ -10,21 +10,25 @@ import SwiftUI
 struct ContentView: View {
     // 猫の状態
     @State private var cat = Cat()
+    // 魚の状態 (新しく追加)
+    @State private var fish = Fish()
     
     // 煮干しの個数
     @State private var niboshiCount = 5
     
     // AR関連の状態
-    @State private var isCatPlaced = false
+    // isFishPlaced に変更
+    @State private var isFishPlaced = false
     @State private var showFeedButton = false
-    @State private var statusMessage = "画面をタップして猫を配置してください"
+    @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
     var body: some View {
         ZStack {
             // AR画面（背景）
             ARViewContainer(
                 cat: $cat,
-                isCatPlaced: $isCatPlaced,
+                fish: $fish, // fish を渡すように変更
+                isFishPlaced: $isFishPlaced, // isCatPlaced から isFishPlaced に変更
                 showFeedButton: $showFeedButton,
                 statusMessage: $statusMessage
             )
@@ -95,7 +99,8 @@ struct ContentView: View {
     private var actionButtons: some View {
         VStack(spacing: 12) {
             // 餌やりボタン
-            if showFeedButton && cat.isHungry {
+            // isFishPlaced かつ cat.isHungry の場合に表示
+            if isFishPlaced && cat.isHungry {
                 Button("🐟 餌をあげる") {
                     feedCat()
                 }
@@ -130,7 +135,8 @@ struct ContentView: View {
     // お腹を空かせるタイマー
     private func startHungerTimer() {
         Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { _ in
-            if isCatPlaced && !cat.isHungry {
+            // isFishPlaced に変更
+            if isFishPlaced && !cat.isHungry {
                 cat.isHungry = true
                 showFeedButton = true
                 statusMessage = "猫がお腹を空かせています"
