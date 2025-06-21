@@ -69,12 +69,10 @@ extension ARViewContainer {
             // 魚がまだ配置されていない場合
             if !parent.isFishPlaced {
                 placeFish(gesture: gesture)
-            } else {
-                // 魚が配置済みの場合、餌やりボタンを表示
-                // ここでは、魚が配置されたことを知らせるメッセージを表示するだけにします。
-                // 餌やりボタンの表示はisCatPlacedに依存するようにします。
-                parent.statusMessage = "魚のぬいぐるみを置きました！猫が来るのを待っています。"
             }
+            //else {
+//                parent.statusMessage = "魚のぬいぐるみを置きました！猫が来るのを待っています。"
+//            }
         }
 
         // 魚を配置する処理
@@ -99,6 +97,7 @@ extension ARViewContainer {
                         self.fishEntity = modelEntity as? ModelEntity
                         if let fishEntity = self.fishEntity {
                             fishEntity.scale = [self.parent.fish.size, self.parent.fish.size, self.parent.fish.size]
+                            fishEntity.orientation = simd_quatf(angle: .pi / 2, axis: [0, 0, 1])
 
                             let anchor = AnchorEntity(world: firstResult.worldTransform)
                             anchor.addChild(fishEntity)
@@ -113,7 +112,7 @@ extension ARViewContainer {
                             
                             // 魚が配置されてから5秒後に猫を配置
                             DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                                self.placeCat(at: Transform(matrix: firstResult.worldTransform))
+                                self.placeCat(at: firstResult.worldTransform)
                             }
                         }
                     })
@@ -122,34 +121,41 @@ extension ARViewContainer {
         }
 
         // 猫を配置する処理
-        private func placeCat(at transform: Transform) {
-            guard let arView = arView else { return }
+                private func placeCat(at fishTransform: simd_float4x4) { // 引数を Transform から simd_float4x4 に変更
+                    guard let arView = arView else { return }
 
-            Entity.loadModelAsync(named: "cat.usdz")
-                .sink(receiveCompletion: { completion in
-                    if case let .failure(error) = completion {
-                        print("Error loading cat model: \(error.localizedDescription)")
-                        self.parent.statusMessage = "猫のモデルをロードできませんでした。"
-                    }
-                }, receiveValue: { modelEntity in
-                    self.catEntity = modelEntity as? ModelEntity
-                    if let catEntity = self.catEntity {
-                        // 猫の初期サイズを設定
-                        catEntity.scale = [self.parent.cat.size, self.parent.cat.size, self.parent.cat.size]
+                    Entity.loadModelAsync(named: "cat.usdz")
+                        .sink(receiveCompletion: { completion in
+                            if case let .failure(error) = completion {
+                                print("Error loading cat model: \(error.localizedDescription)")
+                                self.parent.statusMessage = "猫のモデルをロードできませんでした。"
+                            }
+                        }, receiveValue: { modelEntity in
+                            self.catEntity = modelEntity as? ModelEntity
+                            if let catEntity = self.catEntity {
+                                // 猫の初期サイズを設定
+                                catEntity.scale = [self.parent.cat.size, self.parent.cat.size, self.parent.cat.size]
 
-                        let anchor = AnchorEntity(world: transform.matrix)
-                        anchor.addChild(catEntity)
-                        arView.scene.addAnchor(anchor)
+                                // 魚のTransformを取得し、猫を隣に配置するためのオフセットを適用
+                                var catTransform = fishTransform
+                                // X軸方向に正の値を加算すると「右」に移動
+                                // Z軸方向に正の値を加算すると「手前」に移動
+                                catTransform.columns.3.x += 0.3 // 右に0.3メートル (30cm) ずらす
+                                catTransform.columns.3.z += 0.2 // 手前に0.2メートル (20cm) ずらす
 
-                        DispatchQueue.main.async {
-                            self.parent.statusMessage = "猫がやってきました！"
-                            self.parent.isCatPlaced = true // ★追加: 猫が配置されたらフラグをtrueに
-                            self.parent.showFeedButton = true // ★追加: 猫が配置されたら餌やりボタンを表示
-                        }
-                    }
-                })
-                .store(in: &cancellables)
-        }
+                                let anchor = AnchorEntity(world: catTransform)
+                                anchor.addChild(catEntity)
+                                arView.scene.addAnchor(anchor)
+
+                                DispatchQueue.main.async {
+                                    self.parent.statusMessage = "猫がやってきました！"
+                                    self.parent.isCatPlaced = true
+                                    self.parent.showFeedButton = true
+                                }
+                            }
+                        })
+                        .store(in: &cancellables)
+                }
 
         // 猫のサイズを更新
         func updateCatSize(_ size: Float) {
