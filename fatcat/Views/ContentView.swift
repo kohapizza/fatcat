@@ -30,6 +30,9 @@ struct ContentView: View {
     @State private var showFeedButton = false
     @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
+    // 現在地を取得するためのバインディング
+    @State private var locationManager = LocationManager()
+    
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
@@ -85,6 +88,8 @@ struct ContentView: View {
         }
         .onAppear {
             startHungerTimer()
+            locationManager.requestLocationAuthorization()
+            locationManager.startUpdatingLocation()
         }
         .fullScreenCover(isPresented: $showFullScreenModal) {
             // ここにMainTabViewを配置
