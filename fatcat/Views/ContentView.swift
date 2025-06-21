@@ -19,6 +19,11 @@ struct ContentView: View {
     // 煮干しの個数
     @State private var niboshiCount = 5
     
+    // tabbarの選択状態を管理
+    @State private var selectedTab = 0
+    
+    @State private var showFullScreenModal = false
+    
     // AR関連の状態
     // isFishPlaced に変更
     @State private var isFishPlaced = false
@@ -26,31 +31,95 @@ struct ContentView: View {
     @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
     var body: some View {
-        TabView {
-            MainTabView(
-                cat: $cat,
-                fish: $fish, // fish を渡すように変更
-                isFishPlaced: $isFishPlaced, // isCatPlaced から isFishPlaced に変更
-                showFeedButton: $showFeedButton,
-                statusMessage: $statusMessage,
-                niboshiCount: $niboshiCount
-            )
-            .tabItem {
-                Label("猫を探す", systemImage: "pawprint")
+        ZStack {
+            TabView(selection: $selectedTab) {
+                SettingsTabView(
+                    cat: $cat,
+                    selectedLocation: $selectedLocation,
+                    showingLocationSearch: $showingLocationSearch,
+                    resetData: resetData
+                )
+                .tag(0)
+                
+                ScheduleView()
+                    .tag(2)
             }
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             
-            SettingsTabView(
-                cat: $cat,
-                selectedLocation: $selectedLocation,
-                showingLocationSearch: $showingLocationSearch,
-                resetData: resetData
-            )
-            .tabItem {
-                Label("設定", systemImage: "gear")
+            // カスタムタブバー
+            VStack {
+                Spacer()
+                HStack {
+                    // Item 1
+                    TabButton(title: "設定", isSelected: selectedTab == 0) {
+                        selectedTab = 0
+                    }
+                    
+                    
+                    // 中央の目立つボタン
+                    Button(action: {
+                        showFullScreenModal = true
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 70, height: 70)
+                                .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 2)
+                            
+                            Image(systemName: "camera.fill")
+                                .foregroundColor(.white)
+                                .font(.system(size: 28))
+                        }
+                    }
+                    .offset(y: -15) // 少し上に配置
+                    
+                    // Item 0
+                    TabButton(title: "予定", isSelected: selectedTab == 2) {
+                        selectedTab = 2
+                    }
+                    
+                    
+                }
             }
         }
         .onAppear {
             startHungerTimer()
+        }
+        .fullScreenCover(isPresented: $showFullScreenModal) {
+            // ここにMainTabViewを配置
+            MainTabView(
+                cat: $cat,
+                fish: $fish,
+                isFishPlaced: $isFishPlaced,
+                showFeedButton: $showFeedButton,
+                statusMessage: $statusMessage,
+                niboshiCount: $niboshiCount
+            )
+            .overlay(
+                // 左上にクローズボタンを追加
+                VStack {
+                        HStack {
+                            Button(action: {
+                                showFullScreenModal = false
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.2))
+                                        .frame(width: 44, height: 44)
+                                    
+                                    Image(systemName: "xmark")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 18, weight: .medium))
+                                }
+                            }
+                            .padding(.top, 10)
+                            .padding(.leading, 20)  // trailing から leading に変更
+                            
+                            Spacer()  // Spacer を右側に移動
+                        }
+                        Spacer()
+                    }
+            )
         }
     }
     
@@ -151,5 +220,37 @@ struct ContentView: View {
         niboshiCount = 5
         statusMessage = "データをリセットしました"
         selectedLocation = nil // 追加：位置情報もリセット
+    }
+}
+
+struct TabButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                HStack(spacing: 2) {
+                    ForEach(0..<3) { _ in
+                        RoundedRectangle(cornerRadius: 1)
+                            .fill(isSelected ? Color.blue : Color.gray)
+                            .frame(width: 8, height: 2)
+                    }
+                }
+                
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .blue : .gray)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+
+struct ContentView_Preview: PreviewProvider {
+    static var previews: some View {
+        ContentView()
     }
 }
