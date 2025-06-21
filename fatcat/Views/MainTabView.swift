@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import AVFoundation // ★追加: AVFoundationをインポート
 
 struct MainTabView: View {
     @Binding var cat: Cat
@@ -16,6 +17,8 @@ struct MainTabView: View {
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
     @State private var isCatPlaced: Bool = false // ★追加: 猫が配置されているかどうかのフラグ
+
+    @State private var audioPlayer: AVAudioPlayer? // ★追加: オーディオプレイヤーを保持するプロパティ
 
     var body: some View {
         ZStack {
@@ -62,5 +65,23 @@ struct MainTabView: View {
         niboshiCount -= 1
         cat.feed()
         statusMessage = "にゃーん！猫が大きくなりました！"
+        
+        // ★追加: 猫の鳴き声を再生
+        playCatSound()
+    }
+
+    // ★追加: 猫の鳴き声を再生する関数
+    private func playCatSound() {
+        guard let url = Bundle.main.url(forResource: "female_cat1", withExtension: "mp3") else {
+            print("Error: female_cat1.mp3 not found")
+            return
+        }
+
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.play()
+        } catch {
+            print("Error playing sound: \(error.localizedDescription)")
+        }
     }
 }
