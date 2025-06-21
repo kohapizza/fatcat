@@ -11,6 +11,9 @@ struct ContentView: View {
     // 猫の状態
     @State private var cat = Cat()
     
+    @State private var showingLocationSearch = false // モーダル表示の状態を管理
+    @State private var selectedLocation: Location? // 選択された位置情報を保持
+    
     // 煮干しの個数
     @State private var niboshiCount = 5
     
@@ -72,12 +75,28 @@ struct ContentView: View {
             Text("設定")
                 .font(.title)
             
+            if let location = selectedLocation {
+                            Text("選択された位置情報: \(location.name)")
+                                .font(.headline)
+                            Text("住所: \(location.address ?? "なし")")
+                                .font(.subheadline)
+                            // 現在地からの距離はLocationSearchViewControllerで計算されるため、
+                            // ここではLocationオブジェクトのdistanceプロパティをそのまま表示
+                            Text("初期設定距離: \(String(format: "%.1fkm", location.distance))")
+                                .font(.subheadline)
+            } else {
+                Text("位置情報が選択されていません。")
+                    .font(.headline)
+                    .padding()
+            }
+            
             TextField("猫の名前を入力", text: $cat.name)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
             
             
             Button("位置情報を設定する") {
                 // 位置情報の設定処理
+                showingLocationSearch = true
             }
             .buttonStyle(ShopButtonStyle())
             
@@ -89,6 +108,9 @@ struct ContentView: View {
             
             Spacer()
         }
+        .sheet(isPresented: $showingLocationSearch) {
+                    LocationSearchRepresentable(selectedLocation: $selectedLocation)
+                }
         .padding()
     }
     
