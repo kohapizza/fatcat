@@ -97,7 +97,20 @@ extension ARViewContainer {
                         self.fishEntity = modelEntity as? ModelEntity
                         if let fishEntity = self.fishEntity {
                             fishEntity.scale = [self.parent.fish.size, self.parent.fish.size, self.parent.fish.size]
-                            fishEntity.orientation = simd_quatf(angle: .pi / 2, axis: [0, 0, 1])
+                            // 1. まず魚を「右半身が平面に接する」状態にするための回転
+                            //    「背鰭が平面に触れている」状態から、魚の長軸（Z軸と仮定）を中心に90度（.pi / 2）回転させます。
+                            //    これにより、背が上、腹が下、そして右半身が地面に接するように調整されます。
+                            //    前回は180度でしたが、今回は90度でひっくり返るように試します。
+                            let rotationToCorrectSide = simd_quatf(angle: .pi / 2, axis: [0, 0, 1]) // Z軸を中心に90度回転
+
+                            // 2. 次に魚を「西」の方向へ向かせる回転（現状維持）
+                            //    頭がすでに西を向いているので、この回転はそのまま適用します。
+                            //    Y軸を中心に反時計回り90度（-.pi / 2）回転させます。
+                            let rotationToFaceWest = simd_quatf(angle: -.pi / 2, axis: [0, 1, 0])
+
+                            // 回転の合成: 適用したい順序の逆順に掛け合わせる
+                            // 順序: correctSide -> faceWest
+                            fishEntity.orientation = rotationToFaceWest * rotationToCorrectSide
 
                             // 変更点: ワールド座標に固定するAnchorEntityを使用
                             let anchor = AnchorEntity(world: firstResult.worldTransform) // ここを変更
@@ -138,6 +151,9 @@ extension ARViewContainer {
                         // ★変更点1: 猫のアンカーを魚と同じワールド変換で作成する
                         let anchor = AnchorEntity(world: fishTransform)
                         arView.scene.addAnchor(anchor) // 先にアンカーをシーンに追加
+                        
+                        let rotationToFaceSouth = simd_quatf(angle: .pi / 2, axis: [0, 1, 0]) // Y軸を中心に-90度回転
+                                        catEntity.orientation = rotationToFaceSouth
 
                         // ★変更点2: 猫のエンティティのローカル座標を調整して、魚の隣に配置する
                         // 猫を魚の少し右に配置する場合
