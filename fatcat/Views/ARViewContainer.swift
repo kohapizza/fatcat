@@ -8,7 +8,7 @@
 import SwiftUI
 import ARKit
 import RealityKit
-import Combine // Combineフレームワークをインポート
+import Combine
 
 struct ARViewContainer: UIViewRepresentable {
     @Binding var cat: Cat
@@ -71,8 +71,8 @@ extension ARViewContainer {
                 placeFish(gesture: gesture)
             }
             //else {
-//                parent.statusMessage = "魚のぬいぐるみを置きました！猫が来るのを待っています。"
-//            }
+//                    parent.statusMessage = "魚のぬいぐるみを置きました！猫が来るのを待っています。"
+//                }
         }
 
         // 魚を配置する処理
@@ -99,7 +99,8 @@ extension ARViewContainer {
                             fishEntity.scale = [self.parent.fish.size, self.parent.fish.size, self.parent.fish.size]
                             fishEntity.orientation = simd_quatf(angle: .pi / 2, axis: [0, 0, 1])
 
-                            let anchor = AnchorEntity(world: firstResult.worldTransform)
+                            // 変更点: ワールド座標に固定するAnchorEntityを使用
+                            let anchor = AnchorEntity(world: firstResult.worldTransform) // ここを変更
                             anchor.addChild(fishEntity)
                             arView.scene.addAnchor(anchor)
 
@@ -120,65 +121,61 @@ extension ARViewContainer {
             }
         }
 
-        // 猫を配置する処理
-                private func placeCat(at fishTransform: simd_float4x4) { // 引数を Transform から simd_float4x4 に変更
-                    guard let arView = arView else { return }
+        private func placeCat(at fishTransform: simd_float4x4) {
+            guard let arView = arView else { return }
 
-                    Entity.loadModelAsync(named: "cat.usdz")
-                        .sink(receiveCompletion: { completion in
-                            if case let .failure(error) = completion {
-                                print("Error loading cat model: \(error.localizedDescription)")
-                                self.parent.statusMessage = "猫のモデルをロードできませんでした。"
-                            }
-                        }, receiveValue: { modelEntity in
-                            self.catEntity = modelEntity as? ModelEntity
-                            if let catEntity = self.catEntity {
-                                // 猫の初期サイズを設定
-                                catEntity.scale = [self.parent.cat.size, self.parent.cat.size, self.parent.cat.size]
+            Entity.loadModelAsync(named: "cat.usdz")
+                .sink(receiveCompletion: { completion in
+                    if case let .failure(error) = completion {
+                        print("Error loading cat model: \(error.localizedDescription)")
+                        self.parent.statusMessage = "猫のモデルをロードできませんでした。"
+                    }
+                }, receiveValue: { modelEntity in
+                    self.catEntity = modelEntity as? ModelEntity
+                    if let catEntity = self.catEntity {
+                        catEntity.scale = [self.parent.cat.size, self.parent.cat.size, self.parent.cat.size]
 
-                                // 魚のTransformを取得し、猫を隣に配置するためのオフセットを適用
-                                var targetCatTransform = fishTransform
-                                targetCatTransform.columns.3.x += 0.1 // 右に0.3メートル (30cm) ずらす
+                        // ★変更点1: 猫のアンカーを魚と同じワールド変換で作成する
+                        let anchor = AnchorEntity(world: fishTransform)
+                        arView.scene.addAnchor(anchor) // 先にアンカーをシーンに追加
 
-                                // 猫の初期位置を画面外（例: 魚の奥の方、少しずらした位置）に設定
-                                var initialCatTransform = targetCatTransform
-                                // 魚の奥、かつ少し右から現れるようにする例
-                                initialCatTransform.columns.3.z -= 1.0 // 奥に1メートルずらす
-                                initialCatTransform.columns.3.x += 0.5 // 少し右にずらす
+                        // ★変更点2: 猫のエンティティのローカル座標を調整して、魚の隣に配置する
+                        // 猫を魚の少し右に配置する場合
+                        catEntity.transform.translation = [0.1, 0, 0] // x軸方向に0.1メートル移動（魚の右）
 
-                                let anchor = AnchorEntity(world: initialCatTransform) // 初期位置のアンカーを作成
-                                anchor.addChild(catEntity)
-                                arView.scene.addAnchor(anchor)
+                        anchor.addChild(catEntity) // アンカーに猫エンティティを追加
 
-                                // 猫を最終的な位置へアニメーションさせる
-                                let moveTranslation = simd_make_float3(targetCatTransform.columns.3 - initialCatTransform.columns.3)
+                        // アニメーションは不要になるか、別の形で実装する
+                        // （もし登場演出を残したい場合は、catEntity.transform.translation をアニメーションさせる）
+                        // 例として、登場アニメーションを維持したい場合は以下のように調整します。
 
-                                // アニメーションの最終的なトランスフォームを作成
-                                // 既存のスケールを保持しつつ、移動のみをアニメーションさせる
-                                var finalCatLocalTransform = catEntity.transform // 現在のcatEntityのトランスフォームを取得
-                                finalCatLocalTransform.translation = moveTranslation // そのトランスフォームのtranslationのみを更新
+                        // アニメーションの開始位置（魚からの相対位置）
+                        let initialCatLocalPosition = SIMD3<Float>(0.5, 0, -1.0) // 例えば魚から右に0.5m、奥に1m
+                        catEntity.transform.translation = initialCatLocalPosition // 初期位置を設定
 
-                                let transformAnimation = FromToByAnimation(
-                                    to: finalCatLocalTransform, // ★ここを修正：translationだけでなく、現在のスケールを含むTransformを渡す★
-                                    duration: 1.5, // アニメーションの継続時間（秒）
-                                    timing: .easeOut, // アニメーションの速度カーブ
-                                    bindTarget: .transform
-                                )
+                        // アニメーションの最終位置（魚からの相対位置）
+                        let finalCatLocalPosition = SIMD3<Float>(0.1, 0, 0) // 魚の右に0.1m
 
-                                // アニメーションを生成し、猫エンティティに適用
-                                let animationResource = try! AnimationResource.generate(with: transformAnimation)
-                                catEntity.playAnimation(animationResource, transitionDuration: 0.5, startsPaused: false)
+                        let transformAnimation = FromToByAnimation(
+                            from: Transform(scale: catEntity.scale, rotation: catEntity.orientation, translation: initialCatLocalPosition),
+                            to: Transform(scale: catEntity.scale, rotation: catEntity.orientation, translation: finalCatLocalPosition),
+                            duration: 1.5,
+                            timing: .easeOut,
+                            bindTarget: .transform
+                        )
 
-                                DispatchQueue.main.async {
-                                    self.parent.statusMessage = "猫がやってきました！"
-                                    self.parent.isCatPlaced = true
-                                    self.parent.showFeedButton = true
-                                }
-                            }
-                        })
-                        .store(in: &cancellables)
-                }
+                        let animationResource = try! AnimationResource.generate(with: transformAnimation)
+                        catEntity.playAnimation(animationResource, transitionDuration: 0.5, startsPaused: false)
 
+                        DispatchQueue.main.async {
+                            self.parent.statusMessage = "猫がやってきました！"
+                            self.parent.isCatPlaced = true
+                            self.parent.showFeedButton = true
+                        }
+                    }
+                })
+                .store(in: &cancellables)
+        }
         // 猫のサイズを更新
         func updateCatSize(_ size: Float) {
             catEntity?.scale = [size, size, size]
