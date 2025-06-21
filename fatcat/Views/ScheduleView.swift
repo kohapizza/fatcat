@@ -15,19 +15,20 @@ struct ScheduleRow: View {
     }()
     
     private var catName: String {
-        return allCats.first(where: { $0.id == schedule.catID })?.name ?? "不明な猫"
+        return allCats.first(where: { $0.id == schedule.catId })?.name ?? "不明な猫"
     }
     
+    
     private var catIconName: String {
-        if let cat = allCats.first(where: { $0.id == schedule.catID }),
-           let catType = allCatTypes.first(where: { $0.id == cat.typeID }) {
+        if let cat = allCats.first(where: { $0.id == schedule.catId }),
+           let catType = allCatTypes.first(where: { $0.id == cat.typeId }) {
             return catType.fileName
         }
         return "questionmark.circle.fill"
     }
     
     private var locationName: String {
-        return allLocations.first(where: { $0.id == schedule.locationID })?.locationName ?? "不明な場所"
+        return allLocations.first(where: { $0.id == schedule.locationId })?.name ?? "不明な場所"
     }
     
     var body: some View {
@@ -71,8 +72,7 @@ struct ScheduleRow: View {
 
 // MARK: - 予定表示画面
 struct ScheduleView: View {
-    // CatDataStoreのインスタンスを作成し、環境オブジェクトとして注入
-    @StateObject var dataStore = CatDataStore()
+    @EnvironmentObject var dataStore: CatDataStore
     
     var body: some View {
         NavigationView {

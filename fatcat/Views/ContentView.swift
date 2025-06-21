@@ -14,7 +14,7 @@ struct ContentView: View {
     @State private var fish = Fish()
     
     @State private var showingLocationSearch = false // モーダル表示の状態を管理
-    @State private var selectedLocation: Location? // 選択された位置情報を保持
+    @State private var selectedLocation: CatLocation? // 選択された位置情報を保持
     
     // 煮干しの個数
     @State private var niboshiCount = 5

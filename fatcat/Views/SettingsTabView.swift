@@ -5,7 +5,7 @@ struct SettingsTabView: View {
     @State private var notificationEnabled = true
     @State private var soundEnabled = true
     @Binding var cat: Cat
-    @Binding var selectedLocation: Location?
+    @Binding var selectedLocation: CatLocation?
     @Binding var showingLocationSearch: Bool // このStateをトリガーにモーダルを表示
     @State private var date = Date()
     var resetData: () -> Void

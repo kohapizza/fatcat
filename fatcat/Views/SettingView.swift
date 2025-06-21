@@ -10,19 +10,25 @@ import SwiftUI
 import MapKit
 
 struct LocationTimeSettingView: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var dataStore: CatDataStore
+    
     @State private var showingMyLocationSearch = false
     @Binding var showingLocationSearch: Bool
     @State private var showingLocationTimeSetting = false
     @State private var selectedDate = Date()
     @State private var startTime = Date()
     @State private var endTime = Date()
-    @Binding var selectedLocation: Location?
+    @Binding var selectedLocation: CatLocation?
     @State private var locationCoordinate = CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503)
     @State private var showingLocationPicker = false
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 35.6762, longitude: 139.6503),
         span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
     )
+    
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
     
     var body: some View {
         NavigationView {
@@ -114,8 +120,6 @@ struct LocationTimeSettingView: View {
                                 .font(.headline)
                             Text("住所: \(location.address ?? "なし")")
                                 .font(.subheadline)
-                            Text("初期設定距離: \(String(format: "%.1fkm", location.distance))")
-                                .font(.subheadline)
                         } else {
                             Text("位置情報が選択されていません。")
                                 .font(.headline)
@@ -159,7 +163,42 @@ struct LocationTimeSettingView: View {
                     Button(action: {
                         // 設定を保存する処理
                         print("設定を保存: \(selectedDate), \(startTime)-\(endTime), \(selectedLocation)")
-                        // todo: ここで猫を配置する処理を実装
+                        // 時間を文字列にフォーマット
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "HH:mm"
+                            let startTimeString = dateFormatter.string(from: startTime)
+                            let endTimeString = dateFormatter.string(from: endTime)
+
+                            // 新しいCatScheduleオブジェクトを作成
+                            if let selectedLocation = selectedLocation {
+                                let newSchedule = CatSchedule(
+                                    id: UUID(),
+                                    catId: UUID(),
+                                    locationId: selectedLocation.id,
+                                    date: selectedDate,
+                                    startTime: startTimeString,
+                                    endTime: endTimeString
+                                )
+                                let newLocation = CatLocation(
+                                    id: selectedLocation.id,
+                                    name: selectedLocation.name,
+                                    address: selectedLocation.address,
+                                    latitude: selectedLocation.latitude,
+                                    longitude: selectedLocation.longitude
+                                )
+
+                                // CatDataStoreに新しいスケジュールを追加
+                                // todo: ここで猫を配置する処理を実装
+                                dataStore.allSchedules.append(newSchedule)
+                                dataStore.allLocations.append(newLocation)
+                                print("予定を追加: \(newSchedule)")
+                                dismiss() // 画面を閉じる
+                            }
+                        else {
+                            alertMessage = "猫を配置する場所が選択されていません。場所を選択してください。"
+                            showAlert = true
+                        }
+                            showingLocationSearch = false
                     }) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")

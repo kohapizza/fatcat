@@ -58,7 +58,7 @@ class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchComplete
 
 struct LocationSearchSwiftUI: View {
     @Environment(\.presentationMode) var presentationMode // モーダルを閉じるために必要
-    @Binding var selectedLocation: Location? // 選択された場所をバインディングで受け取る
+    @Binding var selectedLocation: CatLocation? // 選択された場所をバインディングで受け取る
 
     @StateObject private var completer = LocationSearchCompleter() // @StateObjectでライフサイクルを管理
     @State private var searchText: String = ""
@@ -124,14 +124,14 @@ struct LocationSearchSwiftUI: View {
                                 let distanceInMeters = currentLocation.distance(from: destinationLocation)
                                 let distanceInKm = distanceInMeters / 1000.0
 
-                                selectedLocation = Location(
+                                selectedLocation = CatLocation(
+                                    id: UUID(),
                                     name: mapItem.name ?? "不明な場所",
                                     address: mapItem.placemark.title,
                                     latitude: mapItem.placemark.coordinate.latitude,
                                     longitude: mapItem.placemark.coordinate.longitude,
-                                    distance: distanceInKm
                                 )
-                                
+                                print("選択された場所a: \(selectedLocation?.id)")
                                 // モーダルを閉じる
                                 presentationMode.wrappedValue.dismiss()
                             }

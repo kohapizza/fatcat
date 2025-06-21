@@ -7,35 +7,37 @@
 
 import Foundation
 import SwiftUI
+import CoreLocation
 
 // MARK: - データモデル
 struct CatModel: Identifiable, Codable {
-    let id: UUID
+    let id: UUID // catID
     let name: String
     let isHungry: Bool
     let size: Double
-    let typeID: Int // ADDED: Link to CatTypeModel
+    let typeId: Int // ADDED: Link to CatTypeModel.typeId
 }
 
 struct CatTypeModel: Identifiable, Codable {
-    let id: Int
+    let id: Int // typeId
     let fileName: String
     let catType: String // ADDED: "黒猫", "三毛猫", "白猫"などの種類
 }
 
 struct CatSchedule: Identifiable, Codable {
-    let id: Int
-    let catID: UUID // ADDED: To link a schedule to a specific cat
-    let locationID: Int
+    let id: UUID // scheduleId
+    let catId: UUID // ADDED: To link a schedule to a specific cat
+    let locationId: UUID
     let date: Date
     let startTime: String
     let endTime: String
 }
 
-struct CatLocation: Identifiable, Codable {
-    let id: Int
-    let locationName: String
-    let locationAddress: String
-    let lolgitude: Double
-    let latitude: Double
+struct CatLocation: Identifiable, Codable, Hashable {
+    let id: UUID
+    let name: String
+    let address: String?
+    let latitude: CLLocationDegrees
+    let longitude: CLLocationDegrees
 }
+
