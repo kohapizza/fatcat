@@ -10,38 +10,43 @@ import SwiftUI
 struct ContentView: View {
     // 猫の状態
     @State private var cat = Cat()
+    // 魚の状態 (新しく追加)
+    @State private var fish = Fish()
+    
+    @State private var showingLocationSearch = false // モーダル表示の状態を管理
+    @State private var selectedLocation: Location? // 選択された位置情報を保持
     
     // 煮干しの個数
     @State private var niboshiCount = 5
     
     // AR関連の状態
-    @State private var isCatPlaced = false
+    // isFishPlaced に変更
+    @State private var isFishPlaced = false
     @State private var showFeedButton = false
-    @State private var statusMessage = "画面をタップして猫を配置してください"
+    @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
     var body: some View {
-        ZStack {
-            // AR画面（背景）
-            ARViewContainer(
+        TabView {
+            MainTabView(
                 cat: $cat,
-                isCatPlaced: $isCatPlaced,
+                fish: $fish, // fish を渡すように変更
+                isFishPlaced: $isFishPlaced, // isCatPlaced から isFishPlaced に変更
                 showFeedButton: $showFeedButton,
-                statusMessage: $statusMessage
+                statusMessage: $statusMessage,
+                niboshiCount: $niboshiCount
             )
-            .ignoresSafeArea()
+            .tabItem {
+                Label("猫を探す", systemImage: "pawprint")
+            }
             
-            // UI部分（前面）
-            VStack {
-                // 上部の情報表示
-                topInfoBar
-                
-                Spacer()
-                
-                // 状況メッセージ
-                statusMessageView
-                
-                // ボタン類
-                actionButtons
+            SettingsTabView(
+                cat: $cat,
+                selectedLocation: $selectedLocation,
+                showingLocationSearch: $showingLocationSearch,
+                resetData: resetData
+            )
+            .tabItem {
+                Label("設定", systemImage: "gear")
             }
         }
         .onAppear {
@@ -95,7 +100,8 @@ struct ContentView: View {
     private var actionButtons: some View {
         VStack(spacing: 12) {
             // 餌やりボタン
-            if showFeedButton && cat.isHungry {
+            // isFishPlaced かつ cat.isHungry の場合に表示
+            if isFishPlaced && cat.isHungry {
                 Button("🐟 餌をあげる") {
                     feedCat()
                 }
@@ -130,46 +136,20 @@ struct ContentView: View {
     // お腹を空かせるタイマー
     private func startHungerTimer() {
         Timer.scheduledTimer(withTimeInterval: 15.0, repeats: true) { _ in
-            if isCatPlaced && !cat.isHungry {
+            // isFishPlaced に変更
+            if isFishPlaced && !cat.isHungry {
                 cat.isHungry = true
                 showFeedButton = true
                 statusMessage = "猫がお腹を空かせています"
             }
         }
     }
-}
-
-// 餌やりボタンのスタイル
-struct FeedButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.orange)
-            .foregroundColor(.white)
-            .cornerRadius(15)
-            .shadow(radius: 5)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
+    
+    // データリセット
+    private func resetData() {
+        cat = Cat()
+        niboshiCount = 5
+        statusMessage = "データをリセットしました"
+        selectedLocation = nil // 追加：位置情報もリセット
     }
-}
-
-// ショップボタンのスタイル
-struct ShopButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.green.opacity(0.8))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
-    }
-}
-
-#Preview {
-    ContentView()
 }
