@@ -24,157 +24,30 @@ struct ContentView: View {
     
     var body: some View {
         TabView {
-            settingsTab
-                .tabItem {
-                    Label("設定", systemImage: "gear")
-                }
-            
-            mainTab
-                .tabItem {
-                    Label("猫を探す", systemImage: "pawprint")
-                }
-            
-        }
-    }
-    
-    // メインタブ
-    private var mainTab: some View {
-        ZStack {
-            // AR画面（背景）
-            ARViewContainer(
+            MainTabView(
                 cat: $cat,
+                niboshiCount: $niboshiCount,
                 isCatPlaced: $isCatPlaced,
                 showFeedButton: $showFeedButton,
                 statusMessage: $statusMessage
             )
-            .ignoresSafeArea()
+            .tabItem {
+                Label("猫を探す", systemImage: "pawprint")
+            }
             
-            // UI部分（前面）
-            VStack {
-                // 上部の情報表示
-                topInfoBar
-                
-                Spacer()
-                
-                // 状況メッセージ
-                statusMessageView
-                
-                // ボタン類
-                actionButtons
+            SettingsTabView(
+                cat: $cat,
+                selectedLocation: $selectedLocation,
+                showingLocationSearch: $showingLocationSearch,
+                resetData: resetData
+            )
+            .tabItem {
+                Label("設定", systemImage: "gear")
             }
         }
         .onAppear {
             startHungerTimer()
         }
-    }
-    
-    // 設定タブ
-    // 位置情報, 猫の名前, 時間を設定できるように
-    private var settingsTab: some View {
-        VStack(spacing: 20) {
-            Text("設定")
-                .font(.title)
-            
-            if let location = selectedLocation {
-                            Text("選択された位置情報: \(location.name)")
-                                .font(.headline)
-                            Text("住所: \(location.address ?? "なし")")
-                                .font(.subheadline)
-                            // 現在地からの距離はLocationSearchViewControllerで計算されるため、
-                            // ここではLocationオブジェクトのdistanceプロパティをそのまま表示
-                            Text("初期設定距離: \(String(format: "%.1fkm", location.distance))")
-                                .font(.subheadline)
-            } else {
-                Text("位置情報が選択されていません。")
-                    .font(.headline)
-                    .padding()
-            }
-            
-            TextField("猫の名前を入力", text: $cat.name)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            
-            Button("位置情報を設定する") {
-                // 位置情報の設定処理
-                showingLocationSearch = true
-            }
-            .buttonStyle(ShopButtonStyle())
-            
-            
-            Button("🔄 リセット") {
-                resetData()
-            }
-            .buttonStyle(ShopButtonStyle())
-            
-            Spacer()
-        }
-        .sheet(isPresented: $showingLocationSearch) {
-                    LocationSearchRepresentable(selectedLocation: $selectedLocation)
-                }
-        .padding()
-    }
-    
-    // 上部の情報バー
-    private var topInfoBar: some View {
-        HStack {
-            // 猫の情報
-            VStack(alignment: .leading) {
-                Text("🐱 \(cat.name)")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                Text("サイズ: \(String(format: "%.1f", cat.size))倍")
-                    .font(.caption)
-                    .foregroundColor(.white)
-            }
-            
-            Spacer()
-            
-            // 煮干しの個数
-            HStack {
-                Text("🐟")
-                Text("\(niboshiCount)")
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.blue.opacity(0.8))
-            .cornerRadius(20)
-        }
-        .padding()
-        .background(Color.black.opacity(0.3))
-    }
-    
-    // 状況メッセージ
-    private var statusMessageView: some View {
-        Text(statusMessage)
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.white)
-            .padding()
-            .background(Color.black.opacity(0.7))
-            .cornerRadius(10)
-            .padding()
-    }
-    
-    // アクションボタン
-    private var actionButtons: some View {
-        VStack(spacing: 12) {
-            // 餌やりボタン
-            if showFeedButton && cat.isHungry {
-                Button("🐟 餌をあげる") {
-                    feedCat()
-                }
-                .buttonStyle(FeedButtonStyle())
-            }
-            
-            // 煮干し補充ボタン
-            Button("🛒 煮干しを補充 (+3個)") {
-                niboshiCount += 3
-                statusMessage = "煮干しを補充しました！"
-            }
-            .buttonStyle(ShopButtonStyle())
-        }
-        .padding(.bottom, 30)
     }
     
     // 餌やり処理
@@ -208,41 +81,6 @@ struct ContentView: View {
         cat = Cat()
         niboshiCount = 5
         statusMessage = "データをリセットしました"
+        selectedLocation = nil // 追加：位置情報もリセット
     }
-    
-}
-
-// 餌やりボタンのスタイル
-struct FeedButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.orange)
-            .foregroundColor(.white)
-            .cornerRadius(15)
-            .shadow(radius: 5)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
-    }
-}
-
-// ショップボタンのスタイル
-struct ShopButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.green.opacity(0.8))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
-    }
-}
-
-#Preview {
-    ContentView()
 }
