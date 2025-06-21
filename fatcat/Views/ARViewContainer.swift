@@ -8,6 +8,7 @@
 import SwiftUI
 import ARKit
 import RealityKit
+import Combine
 
 struct ARViewContainer: UIViewRepresentable {
     @Binding var cat: Cat
@@ -51,6 +52,7 @@ extension ARViewContainer {
         var arView: ARView?
         var catEntity: ModelEntity?
         var catAnchor: AnchorEntity?
+        var cancellables = Set<AnyCancellable>()
         
         init(_ parent: ARViewContainer) {
             self.parent = parent
@@ -71,39 +73,105 @@ extension ARViewContainer {
         }
         
         // 猫を配置する処理
+//        private func placeCat(gesture: UITapGestureRecognizer) {
+//            guard let arView = arView else { return }
+//            
+//            let location = gesture.location(in: arView)
+//            let results = arView.raycast(
+//                from: location,
+//                allowing: .estimatedPlane,
+//                alignment: .horizontal
+//            )
+//            
+//            if let firstResult = results.first {
+//                // 猫の3Dモデルを作成（シンプルなボックス）
+//                let catMesh = MeshResource.generateBox(size: 0.2)
+//                let catMaterial = SimpleMaterial(color: .orange, isMetallic: false)
+//                let catEntity = ModelEntity(mesh: catMesh, materials: [catMaterial])
+//                
+//                
+//                
+//                // 猫を世界に配置
+//                let anchor = AnchorEntity(world: firstResult.worldTransform)
+//                anchor.addChild(catEntity)
+//                arView.scene.addAnchor(anchor)
+//                
+//                // 保存
+//                self.catEntity = catEntity
+//                self.catAnchor = anchor
+//                
+//                // 状態更新
+//                DispatchQueue.main.async {
+//                    self.parent.isCatPlaced = true
+//                    self.parent.statusMessage = "猫が配置されました！タップして餌をあげよう"
+//                    self.parent.showFeedButton = true
+//                }
+//            }
+//        }
+        
         private func placeCat(gesture: UITapGestureRecognizer) {
             guard let arView = arView else { return }
-            
+
             let location = gesture.location(in: arView)
             let results = arView.raycast(
                 from: location,
                 allowing: .estimatedPlane,
                 alignment: .horizontal
             )
-            
+
             if let firstResult = results.first {
-                // 猫の3Dモデルを作成（シンプルなボックス）
-                let catMesh = MeshResource.generateBox(size: 0.2)
-                let catMaterial = SimpleMaterial(color: .orange, isMetallic: false)
-                let catEntity = ModelEntity(mesh: catMesh, materials: [catMaterial])
-                
-                // 猫を世界に配置
-                let anchor = AnchorEntity(world: firstResult.worldTransform)
-                anchor.addChild(catEntity)
-                arView.scene.addAnchor(anchor)
-                
-                // 保存
-                self.catEntity = catEntity
-                self.catAnchor = anchor
-                
-                // 状態更新
-                DispatchQueue.main.async {
-                    self.parent.isCatPlaced = true
-                    self.parent.statusMessage = "猫が配置されました！タップして餌をあげよう"
-                    self.parent.showFeedButton = true
-                }
+                // MARK: - ここから変更
+                // モデルを非同期でロードする
+                var catEntity: ModelEntity? // ModelEntityをオプショナルで宣言
+
+                let modelFileName = "fish.usdz" // ここにあなたのUSDZファイル名を入れる
+
+                // モデルのロードを試みる
+                ModelEntity.loadModelAsync(named: modelFileName)
+                    .collect()
+                    .sink { completion in
+                        if case let .failure(error) = completion {
+                            print("Error loading model: \(error)")
+                            // エラー処理（例: ユーザーにエラーメッセージを表示）
+                            DispatchQueue.main.async {
+                                self.parent.statusMessage = "モデルのロードに失敗しました。"
+                            }
+                        }
+                    } receiveValue: { entities in
+                        if let loadedEntity = entities.first {
+                            catEntity = loadedEntity
+                            // モデルのロードが成功したら、アンカーに追加してシーンに配置
+                            let anchor = AnchorEntity(world: firstResult.worldTransform)
+                            anchor.addChild(catEntity!) // ここでロードしたモデルを追加
+                            arView.scene.addAnchor(anchor)
+
+                            // モデルのサイズ調整（必要に応じて）
+
+
+                            self.catEntity = catEntity
+                            self.catAnchor = anchor
+
+                            DispatchQueue.main.async {
+                                self.parent.isCatPlaced = true
+                                self.parent.statusMessage = "新しいモデルが配置されました！タップして餌をあげよう"
+                                self.parent.showFeedButton = true
+                            }
+                        } else {
+                            print("No entity found in the loaded USDZ.")
+                            DispatchQueue.main.async {
+                                self.parent.statusMessage = "モデルファイルが空です。"
+                            }
+                        }
+                    }
+                    .store(in: &cancellables) // cancellablesはCombineのSubscriptionを保持するSet<AnyCancellable>
+
+                // MARK: - ここまで変更
             }
         }
+
+        // クラスのプロパティとして追加
+        // var cancellables = Set<AnyCancellable>()
+        // ARViewを保持しているクラスに`import Combine`と`var cancellables = Set<AnyCancellable>()`を追加してください。
         
         // 猫のサイズを更新
         func updateCatSize(_ size: Float) {
