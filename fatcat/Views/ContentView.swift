@@ -20,6 +20,22 @@ struct ContentView: View {
     @State private var statusMessage = "画面をタップして猫を配置してください"
     
     var body: some View {
+        TabView {
+            settingsTab
+                .tabItem {
+                    Label("設定", systemImage: "gear")
+                }
+            
+            mainTab
+                .tabItem {
+                    Label("猫を探す", systemImage: "pawprint")
+                }
+            
+        }
+    }
+    
+    // メインタブ
+    private var mainTab: some View {
         ZStack {
             // AR画面（背景）
             ARViewContainer(
@@ -47,6 +63,33 @@ struct ContentView: View {
         .onAppear {
             startHungerTimer()
         }
+    }
+    
+    // 設定タブ
+    // 位置情報, 猫の名前, 時間を設定できるように
+    private var settingsTab: some View {
+        VStack(spacing: 20) {
+            Text("設定")
+                .font(.title)
+            
+            TextField("猫の名前を入力", text: $cat.name)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            
+            
+            Button("位置情報を設定する") {
+                // 位置情報の設定処理
+            }
+            .buttonStyle(ShopButtonStyle())
+            
+            
+            Button("🔄 リセット") {
+                resetData()
+            }
+            .buttonStyle(ShopButtonStyle())
+            
+            Spacer()
+        }
+        .padding()
     }
     
     // 上部の情報バー
@@ -137,6 +180,14 @@ struct ContentView: View {
             }
         }
     }
+    
+    // データリセット
+    private func resetData() {
+        cat = Cat()
+        niboshiCount = 5
+        statusMessage = "データをリセットしました"
+    }
+    
 }
 
 // 餌やりボタンのスタイル

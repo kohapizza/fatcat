@@ -9,7 +9,7 @@ import Foundation
 
 // 猫の情報を管理する構造体
 struct Cat {
-    var name: String = "にゃんこ"
+    var name: String = ""
     var size: Float = 1.0        // 猫のサイズ
     var feedCount: Int = 0       // 餌をあげた回数
     var isHungry: Bool = true    // お腹が空いているか
