@@ -5,8 +5,10 @@ struct SettingsTabView: View {
     @Binding var selectedLocation: Location?
     @Binding var showingLocationSearch: Bool // このStateをトリガーにモーダルを表示
     var resetData: () -> Void
+    @Binding var locationManager: LocationManager
 
     var body: some View {
+        
         VStack(spacing: 20) {
             Text("設定")
                 .font(.title)
@@ -17,6 +19,8 @@ struct SettingsTabView: View {
                 Text("住所: \(location.address ?? "なし")")
                     .font(.subheadline)
                 Text("初期設定距離: \(String(format: "%.1fkm", location.distance))")
+                    .font(.subheadline)
+                Text("現在地: \(locationManager.currentLocation?.description ?? "位置情報が取得できません")")
                     .font(.subheadline)
             } else {
                 Text("位置情報が選択されていません。")
@@ -41,7 +45,8 @@ struct SettingsTabView: View {
         }
         .sheet(isPresented: $showingLocationSearch) { // sheetモディファイアを使用
             // モーダルとして表示するビューを指定
-            LocationSearchSwiftUI(selectedLocation: $selectedLocation)
+            LocationSearchSwiftUI(selectedLocation: $selectedLocation, locationManager: $locationManager)
+                
         }
         .padding()
     }

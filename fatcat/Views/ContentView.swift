@@ -25,8 +25,22 @@ struct ContentView: View {
     @State private var showFeedButton = false
     @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
+    @State private var locationManager = LocationManager()
+    
     var body: some View {
         TabView {
+            SettingsTabView(
+                cat: $cat,
+                selectedLocation: $selectedLocation,
+                showingLocationSearch: $showingLocationSearch,
+                resetData: resetData,
+                locationManager: $locationManager // LocationManager を渡す
+            )
+            .tabItem {
+                Label("設定", systemImage: "gear")
+            }
+            
+            
             MainTabView(
                 cat: $cat,
                 fish: $fish, // fish を渡すように変更
@@ -38,19 +52,11 @@ struct ContentView: View {
             .tabItem {
                 Label("猫を探す", systemImage: "pawprint")
             }
-            
-            SettingsTabView(
-                cat: $cat,
-                selectedLocation: $selectedLocation,
-                showingLocationSearch: $showingLocationSearch,
-                resetData: resetData
-            )
-            .tabItem {
-                Label("設定", systemImage: "gear")
-            }
         }
         .onAppear {
             startHungerTimer()
+            locationManager.requestLocationAuthorization()
+            locationManager.startUpdatingLocation()
         }
     }
     

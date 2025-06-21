@@ -59,6 +59,7 @@ class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchComplete
 struct LocationSearchSwiftUI: View {
     @Environment(\.presentationMode) var presentationMode // モーダルを閉じるために必要
     @Binding var selectedLocation: Location? // 選択された場所をバインディングで受け取る
+    @Binding var locationManager: LocationManager // 現在地を取得するためのバインディング
 
     @StateObject private var completer = LocationSearchCompleter() // @StateObjectでライフサイクルを管理
     @State private var searchText: String = ""
@@ -116,13 +117,6 @@ struct LocationSearchSwiftUI: View {
 
                             if let mapItem = response.mapItems.first {
                                 print("選択された場所: \(mapItem.name ?? ""), 座標: \(mapItem.placemark.coordinate.latitude), \(mapItem.placemark.coordinate.longitude)")
-                                
-                                // 現在地からの距離を計算（ここでは固定値を使用、実際にはCLLocationManagerで現在地を取得）
-                                // 現在の場所: Minato City, Tokyo, Japan
-                                let currentLocation = CLLocation(latitude: 35.664035, longitude: 139.730302) // 港区の例
-                                let destinationLocation = mapItem.placemark.location!
-                                let distanceInMeters = currentLocation.distance(from: destinationLocation)
-                                let distanceInKm = distanceInMeters / 1000.0
 
                                 selectedLocation = Location(
                                     name: mapItem.name ?? "不明な場所",
