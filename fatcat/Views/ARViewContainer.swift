@@ -137,15 +137,37 @@ extension ARViewContainer {
                                 catEntity.scale = [self.parent.cat.size, self.parent.cat.size, self.parent.cat.size]
 
                                 // 魚のTransformを取得し、猫を隣に配置するためのオフセットを適用
-                                var catTransform = fishTransform
-                                // X軸方向に正の値を加算すると「右」に移動
-                                // Z軸方向に正の値を加算すると「手前」に移動
-                                catTransform.columns.3.x += 0.3 // 右に0.3メートル (30cm) ずらす
-                                catTransform.columns.3.z += 0.2 // 手前に0.2メートル (20cm) ずらす
+                                var targetCatTransform = fishTransform
+                                targetCatTransform.columns.3.x += 0.1 // 右に0.3メートル (30cm) ずらす
 
-                                let anchor = AnchorEntity(world: catTransform)
+                                // 猫の初期位置を画面外（例: 魚の奥の方、少しずらした位置）に設定
+                                var initialCatTransform = targetCatTransform
+                                // 魚の奥、かつ少し右から現れるようにする例
+                                initialCatTransform.columns.3.z -= 1.0 // 奥に1メートルずらす
+                                initialCatTransform.columns.3.x += 0.5 // 少し右にずらす
+
+                                let anchor = AnchorEntity(world: initialCatTransform) // 初期位置のアンカーを作成
                                 anchor.addChild(catEntity)
                                 arView.scene.addAnchor(anchor)
+
+                                // 猫を最終的な位置へアニメーションさせる
+                                let moveTranslation = simd_make_float3(targetCatTransform.columns.3 - initialCatTransform.columns.3)
+
+                                // アニメーションの最終的なトランスフォームを作成
+                                // 既存のスケールを保持しつつ、移動のみをアニメーションさせる
+                                var finalCatLocalTransform = catEntity.transform // 現在のcatEntityのトランスフォームを取得
+                                finalCatLocalTransform.translation = moveTranslation // そのトランスフォームのtranslationのみを更新
+
+                                let transformAnimation = FromToByAnimation(
+                                    to: finalCatLocalTransform, // ★ここを修正：translationだけでなく、現在のスケールを含むTransformを渡す★
+                                    duration: 1.5, // アニメーションの継続時間（秒）
+                                    timing: .easeOut, // アニメーションの速度カーブ
+                                    bindTarget: .transform
+                                )
+
+                                // アニメーションを生成し、猫エンティティに適用
+                                let animationResource = try! AnimationResource.generate(with: transformAnimation)
+                                catEntity.playAnimation(animationResource, transitionDuration: 0.5, startsPaused: false)
 
                                 DispatchQueue.main.async {
                                     self.parent.statusMessage = "猫がやってきました！"
