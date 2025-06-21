@@ -47,7 +47,7 @@ struct ContentView: View {
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             
             // カスタムタブバー
-            VStack {
+            VStack(alignment: .leading) {
                 Spacer()
                 HStack {
                     // Item 1
@@ -80,6 +80,7 @@ struct ContentView: View {
                     
                     
                 }
+                .background(Color(.systemGray6))
             }
         }
         .onAppear {
