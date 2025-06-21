@@ -13,6 +13,9 @@ struct ContentView: View {
     // 魚の状態 (新しく追加)
     @State private var fish = Fish()
     
+    @State private var showingLocationSearch = false // モーダル表示の状態を管理
+    @State private var selectedLocation: Location? // 選択された位置情報を保持
+    
     // 煮干しの個数
     @State private var niboshiCount = 5
     
@@ -23,29 +26,27 @@ struct ContentView: View {
     @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
     var body: some View {
-        ZStack {
-            // AR画面（背景）
-            ARViewContainer(
+        TabView {
+            MainTabView(
                 cat: $cat,
                 fish: $fish, // fish を渡すように変更
                 isFishPlaced: $isFishPlaced, // isCatPlaced から isFishPlaced に変更
                 showFeedButton: $showFeedButton,
-                statusMessage: $statusMessage
+                statusMessage: $statusMessage,
+                niboshiCount: $niboshiCount
             )
-            .ignoresSafeArea()
+            .tabItem {
+                Label("猫を探す", systemImage: "pawprint")
+            }
             
-            // UI部分（前面）
-            VStack {
-                // 上部の情報表示
-                topInfoBar
-                
-                Spacer()
-                
-                // 状況メッセージ
-                statusMessageView
-                
-                // ボタン類
-                actionButtons
+            SettingsTabView(
+                cat: $cat,
+                selectedLocation: $selectedLocation,
+                showingLocationSearch: $showingLocationSearch,
+                resetData: resetData
+            )
+            .tabItem {
+                Label("設定", systemImage: "gear")
             }
         }
         .onAppear {
@@ -143,39 +144,12 @@ struct ContentView: View {
             }
         }
     }
-}
-
-// 餌やりボタンのスタイル
-struct FeedButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.orange)
-            .foregroundColor(.white)
-            .cornerRadius(15)
-            .shadow(radius: 5)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
+    
+    // データリセット
+    private func resetData() {
+        cat = Cat()
+        niboshiCount = 5
+        statusMessage = "データをリセットしました"
+        selectedLocation = nil // 追加：位置情報もリセット
     }
-}
-
-// ショップボタンのスタイル
-struct ShopButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 14))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.green.opacity(0.8))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-            .padding(.horizontal)
-    }
-}
-
-#Preview {
-    ContentView()
 }

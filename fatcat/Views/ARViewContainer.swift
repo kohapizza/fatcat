@@ -16,6 +16,7 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var isFishPlaced: Bool
     @Binding var showFeedButton: Bool
     @Binding var statusMessage: String
+    @Binding var niboshiCount: Int
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
