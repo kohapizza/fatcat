@@ -14,6 +14,7 @@ struct Cat {
     var feedCount: Int = 0       // 餌をあげた回数
     var isHungry: Bool = true    // お腹が空いているか
     
+    
     // 餌をあげる処理
     mutating func feed() {
         feedCount += 1

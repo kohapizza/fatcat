@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import AVFoundation
+import UIKit // Import UIKit for screenshot functionality
 
 struct MainTabView: View {
     @Binding var cat: Cat
@@ -15,7 +17,15 @@ struct MainTabView: View {
     @Binding var showFeedButton: Bool
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
-    @State private var isCatPlaced: Bool = false // ★追加: 猫が配置されているかどうかのフラグ
+    @State private var isCatPlaced: Bool = false
+    @State private var isTakingScreenshot: Bool = false // Add state for screenshot
+
+    @State private var audioPlayer: AVAudioPlayer?
+    
+    // ★追加: ハートのエフェクト表示を制御するプロパティ
+    @State private var showHeartEffect: Bool = false
+    @State private var heartEffectPosition: CGPoint = .zero
+    @State private var heartEffectId: UUID = UUID() // エフェクトを再トリガーするためのID
 
     var body: some View {
         ZStack {
@@ -27,7 +37,8 @@ struct MainTabView: View {
                 showFeedButton: $showFeedButton,
                 statusMessage: $statusMessage,
                 niboshiCount: $niboshiCount,
-                isCatPlaced: $isCatPlaced // ★追加: ARViewContainerにフラグを渡す
+                isCatPlaced: $isCatPlaced,
+                isTakingScreenshot: $isTakingScreenshot // Pass the new binding
             )
             .ignoresSafeArea()
             
@@ -42,25 +53,90 @@ struct MainTabView: View {
                 StatusMessageView(statusMessage: $statusMessage)
                 
                 // ボタン類
-                // isCatPlacedがtrueの場合のみActionButtonsを表示
-                if isCatPlaced { // ★変更: 猫が配置されている場合のみボタンを表示
+                if isCatPlaced {
                     ActionButtons(showFeedButton: $showFeedButton, catIsHungry: cat.isHungry, feedCat: feedCat, niboshiCount: $niboshiCount, statusMessage: $statusMessage)
+                    
+                    // MARK: - Photo Button
+                    Button(action: {
+                        self.isTakingScreenshot = true // Trigger screenshot
+                    }) {
+                        Image(systemName: "camera.fill")
+                            .font(.largeTitle)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                    .padding(.bottom, 20)
                 }
+            }
+
+            // ハートのエフェクトをARViewの上にオーバーレイ
+            if showHeartEffect {
+                HeartEffectView(position: heartEffectPosition)
+                    .id(heartEffectId) // IDを変更することでViewを再生成し、アニメーションを再実行
+                    .transition(.opacity) // フェードイン・アウトのトランジション
+                    .animation(.easeOut(duration: 1.5), value: showHeartEffect) // アニメーションの継続時間
             }
         }
     }
     
-    // 餌やり処理 (MainTabView内で管理する場合)
+    // 餌やり処理
     private func feedCat() {
-        // 煮干しがない場合
         guard niboshiCount > 0 else {
-            statusMessage = "煮干しがありません！補充してください"
+            statusMessage = "煮干しがないよ！補充しよう。"
             return
         }
         
-        // 餌やり実行
         niboshiCount -= 1
         cat.feed()
-        statusMessage = "にゃーん！猫が大きくなりました！"
+        statusMessage = "にゃーん！猫が大きくなったよ！"
+        
+        playCatSound()
+        
+        // ハートのエフェクトをトリガー
+        triggerHeartEffect()
+    }
+
+    private func playCatSound() {
+        guard let url = Bundle.main.url(forResource: "female_cat1", withExtension: "mp3") else {
+            print("Error: female_cat1.mp3 not found")
+            return
+        }
+
+        do {
+            // AVAudioSessionの設定を追加
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay() // これを追加することで再生の準備を確実にする
+            audioPlayer?.play()
+            
+            if audioPlayer?.isPlaying == true { // 再生が開始されたか確認
+                print("Sound playing successfully.")
+            } else {
+                print("Problem: Sound not playing after play() call.")
+            }
+
+        } catch {
+            print("Error playing sound: \(error.localizedDescription)")
+        }
+    }
+
+    // ハートのエフェクトをトリガーする関数
+    private func triggerHeartEffect() {
+        // ハートのエフェクトを表示する位置を設定
+        // 画面中央に表示
+        heartEffectPosition = CGPoint(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2 - 50)
+        
+        showHeartEffect = true
+        heartEffectId = UUID() // 新しいIDを生成してアニメーションをリセット
+
+        // 一定時間後にエフェクトを非表示にする
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { // アニメーション時間に合わせて調整
+            showHeartEffect = false
+        }
     }
 }
