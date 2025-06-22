@@ -10,7 +10,7 @@ import SwiftUI
 import CoreLocation
 
 // MARK: - データモデル
-struct CatModel: Identifiable, Codable {
+struct CatModel: Identifiable, Codable, Hashable {
     let id: UUID // catID
     let name: String
     let isHungry: Bool
@@ -18,7 +18,7 @@ struct CatModel: Identifiable, Codable {
     let typeId: Int // ADDED: Link to CatTypeModel.typeId
 }
 
-struct CatTypeModel: Identifiable, Codable {
+struct CatTypeModel: Identifiable, Codable, Hashable {
     let id: Int // typeId
     let fileName: String
     let catType: String // ADDED: "黒猫", "三毛猫", "白猫"などの種類

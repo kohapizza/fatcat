@@ -23,6 +23,33 @@ struct LocationTimeSettingView: View {
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     
+    @State private var addNewCat: Bool = false
+    @State private var newCatName: String = "" // 新しい猫の名前入力用
+    @State private var selectedCatType: CatTypeModel? // 新しい猫のタイプ選択用
+    @State private var selectedExistingCat: CatModel? // 既存の猫選択用
+
+    // MARK: - isDisabled 計算プロパティ
+    private var isDisabled: Bool {
+        // 場所が選択されていない場合
+        if selectedLocation == nil {
+            return true
+        }
+        
+        // 新しい猫を配置する場合のバリデーション
+        if addNewCat {
+            if newCatName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || selectedCatType == nil {
+                return true
+            }
+        } else {
+            // 既存の猫を配置する場合のバリデーション
+            if selectedExistingCat == nil {
+                return true
+            }
+        }
+        
+        return false // 全ての条件をクリアした場合
+    }
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -156,6 +183,64 @@ struct LocationTimeSettingView: View {
                         }
                     }
                     
+                    // --- 猫の選択/新規作成セクション ---
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle(isOn: $addNewCat) {
+                            Text("新しい猫を配置する")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .padding(.vertical, 5)
+                        
+                        if addNewCat {
+                            // 新しい猫を配置する場合
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("猫の名前")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                TextField("新しい猫の名前を入力", text: $newCatName)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .padding(.horizontal, 4)
+                                
+                                Text("猫の種類")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Picker("猫の種類", selection: $selectedCatType) {
+                                    Text("選択してください").tag(nil as CatTypeModel?) // 未選択の状態
+                                    ForEach(dataStore.allCatTypes) { catType in
+                                        Text(catType.catType).tag(catType as CatTypeModel?)
+                                    }
+                                }
+                                .pickerStyle(MenuPickerStyle()) // または .wheelPickerStyle() など
+                                .padding(.horizontal, 4)
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 0.5))
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        } else {
+                            // 既存の猫を配置する場合
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("既存の猫を選択")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Picker("既存の猫の名前", selection: $selectedExistingCat) {
+                                    Text("選択してください").tag(nil as CatModel?) // 未選択の状態
+                                    ForEach(dataStore.allCats) { cat in
+                                        Text(cat.name).tag(cat as CatModel?)
+                                    }
+                                }
+                                .pickerStyle(MenuPickerStyle()) // または .wheelPickerStyle() など
+                                .padding(.horizontal, 4)
+                                .background(RoundedRectangle(cornerRadius: 8).stroke(Color.gray, lineWidth: 0.5))
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                        }
+                    }
+                    // --- 猫の選択/新規作成セクション終わり ---
+                    
                     Spacer(minLength: 20)
                     
                     // 設定ボタン
@@ -178,8 +263,8 @@ struct LocationTimeSettingView: View {
                         .cornerRadius(12)
                         .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 2)
                     }
-                    .disabled(selectedLocation == nil) // 場所が選択されていない場合は無効化
-                    .opacity(selectedLocation == nil ? 0.6 : 1.0)
+                    .disabled(isDisabled) // isDisabled 計算プロパティを使用
+                    .opacity(isDisabled ? 0.6 : 1.0)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
@@ -222,6 +307,38 @@ struct LocationTimeSettingView: View {
             return
         }
         
+        var catIdToUse: UUID
+        
+        if addNewCat {
+            // 新しい猫を配置する場合
+            guard !newCatName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                alertMessage = "新しい猫の名前を入力してください。"
+                showAlert = true
+                return
+            }
+            guard let selectedCatType = selectedCatType else {
+                alertMessage = "新しい猫の種類を選択してください。"
+                showAlert = true
+                return
+            }
+            
+            // 新しいCatModelを作成し、dataStoreに追加
+            let newCat = CatModel(id: UUID(), name: newCatName, isHungry: true, size: 0.01, typeId: selectedCatType.id)
+            dataStore.allCats.append(newCat)
+            catIdToUse = newCat.id
+            print("新しい猫を追加しました: \(newCat.name) (Type: \(selectedCatType.catType))")
+            
+        } else {
+            // 既存の猫を配置する場合
+            guard let existingCat = selectedExistingCat else {
+                alertMessage = "配置する猫を選択してください。"
+                showAlert = true
+                return
+            }
+            catIdToUse = existingCat.id
+            print("既存の猫を配置します: \(existingCat.name)")
+        }
+        
         // 時間を文字列にフォーマット
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "HH:mm"
@@ -231,7 +348,7 @@ struct LocationTimeSettingView: View {
         // 新しいCatScheduleオブジェクトを作成
         let newSchedule = CatSchedule(
             id: UUID(),
-            catId: UUID(),
+            catId: catIdToUse,
             locationId: selectedLocation.id,
             date: selectedDate,
             startTime: startTimeString,
@@ -255,6 +372,7 @@ struct LocationTimeSettingView: View {
         dataStore.allSchedules.append(newSchedule)
         
         print("猫のスケジュールを保存しました: \(newSchedule)")
+        print("新しい猫を配置する: \(addNewCat)")
         
         // モーダルを閉じる
         showingLocationSearch = false
@@ -266,3 +384,6 @@ struct MapPin: Identifiable {
     let id = UUID()
     let coordinate: CLLocationCoordinate2D
 }
+
+// 既存のCatScheduleManager.swiftのデータモデルとCatDataStoreクラスもそのまま利用します。
+// CatScheduleManager.swiftの内容は変更する必要はありません。
