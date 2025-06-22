@@ -15,7 +15,6 @@ struct MainTabView: View {
     @Binding var fish: Fish
     @Binding var isFishPlaced: Bool
     @Binding var showFeedButton: Bool
-    @Binding var statusMessage: String
     @Binding var niboshiCount: Int
     @State private var isCatPlaced: Bool = false
     @State private var isTakingScreenshot: Bool = false // Add state for screenshot
@@ -28,6 +27,12 @@ struct MainTabView: View {
     @State private var heartEffectPosition: CGPoint = .zero
     @State private var heartEffectId: UUID = UUID() // エフェクトを再トリガーするためのID
 
+    @State private var isInLocation: Bool = false // ifInLocationの結果を保持する新しいState
+
+    // MARK: - ここから変更
+    @State var statusMessage: String = "" // 初期値を空文字列に変更
+    // MARK: - ここまで変更
+
     var body: some View {
         ZStack {
             // AR画面（背景）
@@ -39,7 +44,8 @@ struct MainTabView: View {
                 statusMessage: $statusMessage,
                 niboshiCount: $niboshiCount,
                 isCatPlaced: $isCatPlaced,
-                isTakingScreenshot: $isTakingScreenshot // Pass the new binding
+                isTakingScreenshot: $isTakingScreenshot, // Pass the new binding
+                isInLocation: $isInLocation // 新しいバインディングを渡す
             )
             .ignoresSafeArea()
             
@@ -81,11 +87,31 @@ struct MainTabView: View {
             }
         }
         .onAppear {
-            playBackgroundMusic() // Play BGM when the view appears
+            // MARK: - ここから変更
+            // ARViewContainerからのisInLocationの値がtrueの場合のみBGMを再生
+            if isInLocation {
+                playBackgroundMusic()
+                statusMessage = "画面をタップしてぬいぐるみを置いてみよう！" // 初期メッセージを設定
+            } else {
+                print("Not in location, BGM will not play.")
+                statusMessage = "ここには猫はいないみたい…" // 位置情報がfalseの場合のメッセージ
+            }
+            // MARK: - ここまで変更
         }
         .onDisappear {
             bgmPlayer?.stop() // Stop BGM when the view disappears
             bgmPlayer = nil // Release the player
+        }
+        .onChange(of: isInLocation) { newValue in
+            if newValue {
+                playBackgroundMusic()
+                statusMessage = "画面をタップしてぬいぐるみを置いてみよう！" // 位置情報がtrueになった場合のメッセージ
+            } else {
+                bgmPlayer?.stop()
+                bgmPlayer = nil
+                print("Location changed, stopping BGM.")
+                statusMessage = "ここには猫はいないみたい…" // 位置情報がfalseになった場合のメッセージ
+            }
         }
     }
     
@@ -150,6 +176,11 @@ struct MainTabView: View {
 
     // MARK: - Background Music
     private func playBackgroundMusic() {
+        // BGMがすでに再生中の場合は何もしない
+        if bgmPlayer?.isPlaying == true {
+            return
+        }
+        
         guard let url = Bundle.main.url(forResource: "bgm", withExtension: "mp3") else {
             print("Error: bgm.mp3 not found")
             return
