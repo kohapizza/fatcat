@@ -1,10 +1,25 @@
-import SwiftUI
+//
+// ScheduleView.swift
+//
 
+import SwiftUI
+import MapKit
+import CoreLocation
+
+// MARK: - ScheduleRow
 struct ScheduleRow: View {
     let schedule: CatSchedule
     let allCats: [CatModel]
     let allCatTypes: [CatTypeModel]
     let allLocations: [CatLocation]
+    
+    // Closure to be called when a schedule needs to be deleted
+    let onDelete: (UUID) -> Void
+    // Closure to be called when the map detail view should be shown (receives CatLocation)
+    let onMapTapped: (CatLocation) -> Void
+    
+    // State to control the visibility of the delete button
+    @State private var showDeleteButton: Bool = false
     
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -15,81 +30,126 @@ struct ScheduleRow: View {
     }()
     
     private var catName: String {
-        return allCats.first(where: { $0.id == schedule.catId })?.name ?? "不明な猫"
+        return allCats.first(where: { $0.id == schedule.catId })?.name ?? "Unknown Cat"
     }
-    
     
     private var catIconName: String {
         if let cat = allCats.first(where: { $0.id == schedule.catId }),
            let catType = allCatTypes.first(where: { $0.id == cat.typeId }) {
-            return catType.fileName
+            return catType.emoji // Assuming fileName is still used for icon names, as per CatTypeModel.fileName property in original ScheduleRow
         }
-        return "questionmark.circle.fill"
+        return "🐱"
+    }
+    
+    private var location: CatLocation? {
+        return allLocations.first(where: { $0.id == schedule.locationId })
     }
     
     private var locationName: String {
-        return allLocations.first(where: { $0.id == schedule.locationId })?.name ?? "不明な場所"
+        return location?.name ?? "Unknown Place"
     }
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左側の情報（日付、時間、猫の名前、場所）
-            VStack(spacing: 4) {
-                HStack {
-                    Text(Self.dateFormatter.string(from: schedule.date))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+        // ZStack to overlay the delete button on the row content
+        ZStack(alignment: .topTrailing) {
+            // Schedule display part
+            HStack(spacing: 16) {
+                // Left side information (Date, Time, Cat Name, Location)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(Self.dateFormatter.string(from: schedule.date))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(schedule.startTime) - \(schedule.endTime)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("\(schedule.startTime) - \(schedule.endTime)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text("**\(catName)** - \(locationName)")
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                }
+                Spacer()
+                
+                // Right side cat icon
+                Text(catIconName)
+                    .font(.system(size: 30)) // Adjust size as needed
+                    
+            }
+            .padding()
+            .background(Color.white)
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+            .contentShape(Rectangle()) // Extend tap area to the whole row
+            // MARK: - Gesture Changes: Long press for delete, tap for map
+            // Use a specific minimumDuration for long press to avoid conflicting with taps.
+            .onLongPressGesture(minimumDuration: 0.5) { // Add minimumDuration
+                withAnimation { // Animate showing/hiding
+                    showDeleteButton.toggle()
+                }
+            }
+            // For simultaneous gestures, explicitly define the order or use .simultaneousGesture if needed.
+            // In this case, by setting a minimumDuration for long press, normal taps will now fire reliably.
+            .onTapGesture {
+                // Hide the delete button on tap (in case it was already shown)
+                withAnimation {
+                    showDeleteButton = false
                 }
                 
-                Text("**\(catName)** - \(locationName)")
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
-                Spacer()
+                // Call the map display closure if location is available
+                if let loc = location {
+                    onMapTapped(loc)
+                }
             }
-            Spacer() // 左側の内容とアイコンを左右に広げる
             
-            // 右側の猫アイコン
-            Image(systemName: catIconName)
-                .font(.system(size: 30))
-                .foregroundColor(.orange)
+            // Delete button (only visible when showDeleteButton is true)
+            if showDeleteButton {
+                Button(action: {
+                    onDelete(schedule.id) // Call delete closure with schedule ID
+                    withAnimation {
+                        showDeleteButton = false // Hide button after deletion
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill") // 'X' mark icon
+                        .font(.title2) // Adjust icon size
+                        .foregroundColor(.white) // White icon color
+                        .background(Circle().fill(Color.gray.opacity(0.7))) // Semi-transparent gray circular background
+                        .clipShape(Circle()) // Clip to a circle shape
+                }
+                .buttonStyle(PlainButtonStyle()) // Reset default button style
+                .offset(x: 10, y: -10) // Offset to position at top-right corner
+                .transition(.opacity) // Fade animation for appearance/disappearance
+            }
         }
-        .padding() // 内側のパディングを増やす
-        // MARK: - 各行の背景色と角丸、影を設定して見やすくする
-        .background(Color.white) // 行の背景を白に
-        .cornerRadius(10)       // 角を丸くする
-        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2) // 控えめな影
-        .padding(.horizontal, 5) // Listの端からの間隔
-        .padding(.vertical, 3)   // 各行間の間隔を少し広げる
+        .padding(.horizontal, 5) // Horizontal padding from List edges
+        .padding(.vertical, 3)   // Vertical padding between rows
     }
 }
 
-
-// MARK: - 予定表示画面
+// MARK: - ScheduleView
 struct ScheduleView: View {
     @EnvironmentObject var dataStore: CatDataStore
     
+    // State variables for map display
+    @State private var showingLocationDetailSheet: Bool = false
+    @State private var selectedLocationForMap: CatLocation?
+    
     var body: some View {
         NavigationView {
-            // MARK: - 全体の背景を白にする
-            // ZStackを使って、全体の背景色を確実に設定
             ZStack {
-                Color.white.ignoresSafeArea() // 背景色を白に設定し、セーフエリアを無視して全体に適用
+                Color.white.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // 今日の予定サマリー
+                    // Today's schedule summary
                     VStack(spacing: 12) {
                         HStack {
                             VStack(alignment: .leading) {
-                                Text("今日の猫")
+                                Text("Today's Cats")
                                     .font(.headline)
                                     .fontWeight(.bold)
-                                Text("\(todaySchedules.count)匹が待っています")
+                                Text("\(todaySchedules.count) cats are waiting")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                             }
@@ -112,18 +172,28 @@ struct ScheduleView: View {
                     .padding(.bottom, 20)
                     .padding(.top, 15)
                     
-                    // 予定リスト
+                    // Schedule list
                     List {
                         ForEach(groupedSchedules.keys.sorted(), id: \.self) { date in
                             Section(header: Text(formatDate(date)).font(.headline)) {
                                 ForEach(groupedSchedules[date] ?? []) { schedule in
-                                    ScheduleRow(schedule: schedule, allCats: dataStore.allCats, allCatTypes: dataStore.allCatTypes, allLocations: dataStore.allLocations)
-                                        // MARK: - 各ListRowのデフォルト背景をクリアにし、ScheduleRow内で背景を設定するため
-                                        .listRowBackground(Color.clear)
-                                        // MARK: - Listの区切り線を非表示にして、ScheduleRowの背景と影が綺麗に見えるようにする
-                                        .listRowSeparator(.hidden)
+                                    ScheduleRow(
+                                        schedule: schedule,
+                                        allCats: dataStore.allCats,
+                                        allCatTypes: dataStore.allCatTypes,
+                                        allLocations: dataStore.allLocations,
+                                        onDelete: { scheduleId in
+                                            dataStore.allSchedules.removeAll { $0.id == scheduleId }
+                                        },
+                                        onMapTapped: { locationFromRow in // Receive CatLocation directly from ScheduleRow
+                                            selectedLocationForMap = locationFromRow
+                                            showingLocationDetailSheet = true
+                                        }
+                                    )
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
                                 }
-                                // MARK: - 行削除の機能 (変更なし)
+                                // Keep swipe-to-delete functionality as well
                                 .onDelete { indexSet in
                                     deleteSchedule(at: indexSet, for: date)
                                 }
@@ -131,14 +201,20 @@ struct ScheduleView: View {
                         }
                     }
                     .listStyle(InsetGroupedListStyle())
-                    // MARK: - List自体の背景色を白にする重要な設定
-                    // iOS 15以降でListの背景をカスタムする推奨方法
-                    .scrollContentBackground(.hidden) // スクロールコンテンツの背景を非表示
-                    .background(Color.white)         // その下に白を適用
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white)
                 }
             }
-            .navigationTitle("予定")
+            .navigationTitle("Schedules")
             .navigationBarTitleDisplayMode(.inline)
+            // Map display sheet
+            .sheet(isPresented: $showingLocationDetailSheet) {
+                if let location = selectedLocationForMap {
+                    ScheduleLocationMapDetailView(location: location)
+                } else {
+                    Text("Location information not found.")
+                }
+            }
         }
     }
     
@@ -170,7 +246,7 @@ struct ScheduleView: View {
     }
 }
 
-// Safe array subscript extension (変更なし)
+// Safe array subscript extension (no changes)
 extension Array {
     subscript(safe index: Index) -> Element? {
         return indices.contains(index) ? self[index] : nil
