@@ -55,7 +55,7 @@ struct MainTabView: View {
                 }
             }
 
-            // ★追加: ハートのエフェクトをARViewの上にオーバーレイ
+            // ハートのエフェクトをARViewの上にオーバーレイ
             if showHeartEffect {
                 HeartEffectView(position: heartEffectPosition)
                     .id(heartEffectId) // IDを変更することでViewを再生成し、アニメーションを再実行
@@ -68,17 +68,17 @@ struct MainTabView: View {
     // 餌やり処理
     private func feedCat() {
         guard niboshiCount > 0 else {
-            statusMessage = "煮干しがありません！補充してください"
+            statusMessage = "煮干しがないよ！補充しよう。"
             return
         }
         
         niboshiCount -= 1
         cat.feed()
-        statusMessage = "にゃーん！猫が大きくなりました！"
+        statusMessage = "にゃーん！猫が大きくなったよ！"
         
         playCatSound()
         
-        // ★追加: ハートのエフェクトをトリガー
+        // ハートのエフェクトをトリガー
         triggerHeartEffect()
     }
 
@@ -96,12 +96,10 @@ struct MainTabView: View {
         }
     }
 
-    // ★追加: ハートのエフェクトをトリガーする関数
+    // ハートのエフェクトをトリガーする関数
     private func triggerHeartEffect() {
-        // ハートのエフェクトを表示する位置を猫のモデルがあるあたりに設定（画面中央付近など）
-        // 実際の猫のAR空間での位置と合わせる場合は、ARViewContainerから座標をBindingで受け取る必要がありますが、
-        // ここでは簡単に画面中央に表示されるように仮置きします。
-        // 例: 画面中央
+        // ハートのエフェクトを表示する位置を設定
+        // 画面中央に表示
         heartEffectPosition = CGPoint(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2 - 50)
         
         showHeartEffect = true

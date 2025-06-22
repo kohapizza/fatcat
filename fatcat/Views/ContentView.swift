@@ -10,9 +10,8 @@ import SwiftUI
 struct ContentView: View {
     // 猫の状態
     @State private var cat = Cat()
-    // 魚の状態 (新しく追加)
+    // 魚の状態
     @State private var fish = Fish()
-    
     @State private var showingLocationSearch = false // モーダル表示の状態を管理
     @State private var selectedLocation: Location? // 選択された位置情報を保持
     
@@ -20,10 +19,9 @@ struct ContentView: View {
     @State private var niboshiCount = 5
     
     // AR関連の状態
-    // isFishPlaced に変更
     @State private var isFishPlaced = false
     @State private var showFeedButton = false
-    @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
+    @State private var statusMessage = "画面をタップしてぬいぐるみを置いてみよう！"
     
     var body: some View {
         TabView {
@@ -61,9 +59,6 @@ struct ContentView: View {
             VStack(alignment: .leading) {
                 Text("🐱 \(cat.name)")
                     .font(.headline)
-                    .foregroundColor(.white)
-                Text("サイズ: \(String(format: "%.1f", cat.size))倍")
-                    .font(.caption)
                     .foregroundColor(.white)
             }
             
@@ -111,7 +106,7 @@ struct ContentView: View {
             // 煮干し補充ボタン
             Button("🛒 煮干しを補充 (+3個)") {
                 niboshiCount += 3
-                statusMessage = "煮干しを補充しました！"
+                statusMessage = "煮干しを補充したよ！"
             }
             .buttonStyle(ShopButtonStyle())
         }
@@ -122,14 +117,14 @@ struct ContentView: View {
     private func feedCat() {
         // 煮干しがない場合
         guard niboshiCount > 0 else {
-            statusMessage = "煮干しがありません！補充してください"
+            statusMessage = "煮干しが足りないよ！補充しよう。"
             return
         }
         
         // 餌やり実行
         niboshiCount -= 1
         cat.feed()
-        statusMessage = "にゃーん！猫が大きくなりました！"
+        statusMessage = "にゃーん！猫が大きくなったよ！"
         showFeedButton = false
     }
     
@@ -140,7 +135,7 @@ struct ContentView: View {
             if isFishPlaced && !cat.isHungry {
                 cat.isHungry = true
                 showFeedButton = true
-                statusMessage = "猫がお腹を空かせています"
+                statusMessage = "猫がお腹を空かせているみたい"
             }
         }
     }
@@ -150,6 +145,6 @@ struct ContentView: View {
         cat = Cat()
         niboshiCount = 5
         statusMessage = "データをリセットしました"
-        selectedLocation = nil // 追加：位置情報もリセット
+        selectedLocation = nil // 位置情報もリセット
     }
 }
