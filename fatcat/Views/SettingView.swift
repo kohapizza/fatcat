@@ -5,7 +5,6 @@ import MapKit
 struct LocationTimeSettingView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataStore: CatDataStore
-    @EnvironmentObject var locationManager: LocationManager
     
     @State private var showingMyLocationSearch = false
     @Binding var showingLocationSearch: Bool
