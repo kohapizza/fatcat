@@ -32,19 +32,19 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            TabView(selection: $selectedTab) {
-                SettingsTabView(
-                    cat: $cat,
-                    selectedLocation: $selectedLocation,
-                    showingLocationSearch: $showingLocationSearch,
-                    resetData: resetData
-                )
-                .tag(0)
-                
-                ScheduleView()
-                    .tag(2)
+            // TabViewの代わりに条件分岐を使用
+            Group {
+                if selectedTab == 0 {
+                    SettingsTabView(
+                        cat: $cat,
+                        selectedLocation: $selectedLocation,
+                        showingLocationSearch: $showingLocationSearch,
+                        resetData: resetData
+                    )
+                } else if selectedTab == 2 {
+                    ScheduleView()
+                }
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             
             // カスタムタブバー
             VStack(alignment: .leading) {
