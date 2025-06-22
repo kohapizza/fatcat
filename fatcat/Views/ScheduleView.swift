@@ -1,10 +1,17 @@
 import SwiftUI
 
+// MARK: - ScheduleRow
 struct ScheduleRow: View {
     let schedule: CatSchedule
     let allCats: [CatModel]
     let allCatTypes: [CatTypeModel]
     let allLocations: [CatLocation]
+    
+    // スケジュール削除時に呼び出すクロージャ
+    let onDelete: (UUID) -> Void
+    
+    // 削除ボタンを表示するかどうかを管理するState
+    @State private var showDeleteButton: Bool = false
     
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -17,7 +24,6 @@ struct ScheduleRow: View {
     private var catName: String {
         return allCats.first(where: { $0.id == schedule.catId })?.name ?? "不明な猫"
     }
-    
     
     private var catIconName: String {
         if let cat = allCats.first(where: { $0.id == schedule.catId }),
@@ -32,43 +38,66 @@ struct ScheduleRow: View {
     }
     
     var body: some View {
-        HStack(spacing: 16) {
-            // 左側の情報（日付、時間、猫の名前、場所）
-            VStack(spacing: 4) {
-                HStack {
-                    Text(Self.dateFormatter.string(from: schedule.date))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+        // ZStackで行と削除ボタンを重ねる
+        ZStack(alignment: .topTrailing) {
+            // スケジュール表示部分
+            HStack(spacing: 16) {
+                // 左側の情報（日付、時間、猫の名前、場所）
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(Self.dateFormatter.string(from: schedule.date))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("\(schedule.startTime) - \(schedule.endTime)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("\(schedule.startTime) - \(schedule.endTime)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text("**\(catName)** - \(locationName)")
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
                 }
-                
-                Text("**\(catName)** - \(locationName)")
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .foregroundColor(.primary)
-                
                 Spacer()
+                
+                // 右側の猫アイコン
+                Image(systemName: catIconName)
+                    .font(.system(size: 30))
+                    .foregroundColor(.orange)
             }
-            Spacer() // 左側の内容とアイコンを左右に広げる
+            .padding()
+            .background(Color.white)
+            .cornerRadius(10)
+            .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+            .contentShape(Rectangle()) // タップ領域を広げる
+            .onTapGesture {
+                showDeleteButton.toggle()
+            }
             
-            // 右側の猫アイコン
-            Image(systemName: catIconName)
-                .font(.system(size: 30))
-                .foregroundColor(.orange)
+            // 削除ボタン (showDeleteButtonがtrueの場合のみ表示)
+            if showDeleteButton {
+                Button(action: {
+                    onDelete(schedule.id) // スケジュールIDを渡して削除クロージャを呼び出す
+                    withAnimation {
+                        showDeleteButton = false // 削除後はボタンを非表示
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill") // バツマークのアイコン
+                        .font(.title2) // アイコンサイズを調整
+                        .foregroundColor(.white) // アイコンの色を白に
+                        .background(Circle().fill(Color.gray.opacity(0.7))) // 半透明の灰色の円形背景
+                        .clipShape(Circle()) // 円形にクリップ
+                }
+                .buttonStyle(PlainButtonStyle()) // ボタンのデフォルトスタイルをリセット
+                .offset(x: 10, y: -10) // 右上から少しずらして配置
+                .transition(.opacity) // 表示/非表示時にフェードアニメーション
+            }
         }
-        .padding() // 内側のパディングを増やす
-        // MARK: - 各行の背景色と角丸、影を設定して見やすくする
-        .background(Color.white) // 行の背景を白に
-        .cornerRadius(10)       // 角を丸くする
-        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2) // 控えめな影
         .padding(.horizontal, 5) // Listの端からの間隔
         .padding(.vertical, 3)   // 各行間の間隔を少し広げる
     }
 }
-
 
 // MARK: - 予定表示画面
 struct ScheduleView: View {
@@ -76,13 +105,10 @@ struct ScheduleView: View {
     
     var body: some View {
         NavigationView {
-            // MARK: - 全体の背景を白にする
-            // ZStackを使って、全体の背景色を確実に設定
             ZStack {
-                Color.white.ignoresSafeArea() // 背景色を白に設定し、セーフエリアを無視して全体に適用
+                Color.white.ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // 今日の予定サマリー
                     VStack(spacing: 12) {
                         HStack {
                             VStack(alignment: .leading) {
@@ -112,18 +138,23 @@ struct ScheduleView: View {
                     .padding(.bottom, 20)
                     .padding(.top, 15)
                     
-                    // 予定リスト
                     List {
                         ForEach(groupedSchedules.keys.sorted(), id: \.self) { date in
                             Section(header: Text(formatDate(date)).font(.headline)) {
                                 ForEach(groupedSchedules[date] ?? []) { schedule in
-                                    ScheduleRow(schedule: schedule, allCats: dataStore.allCats, allCatTypes: dataStore.allCatTypes, allLocations: dataStore.allLocations)
-                                        // MARK: - 各ListRowのデフォルト背景をクリアにし、ScheduleRow内で背景を設定するため
-                                        .listRowBackground(Color.clear)
-                                        // MARK: - Listの区切り線を非表示にして、ScheduleRowの背景と影が綺麗に見えるようにする
-                                        .listRowSeparator(.hidden)
+                                    ScheduleRow(
+                                        schedule: schedule,
+                                        allCats: dataStore.allCats,
+                                        allCatTypes: dataStore.allCatTypes,
+                                        allLocations: dataStore.allLocations,
+                                        onDelete: { scheduleId in
+                                            dataStore.allSchedules.removeAll { $0.id == scheduleId }
+                                        }
+                                    )
+                                    .listRowBackground(Color.clear)
+                                    .listRowSeparator(.hidden)
                                 }
-                                // MARK: - 行削除の機能 (変更なし)
+                                // スワイプ削除機能も残しておきます
                                 .onDelete { indexSet in
                                     deleteSchedule(at: indexSet, for: date)
                                 }
@@ -131,10 +162,8 @@ struct ScheduleView: View {
                         }
                     }
                     .listStyle(InsetGroupedListStyle())
-                    // MARK: - List自体の背景色を白にする重要な設定
-                    // iOS 15以降でListの背景をカスタムする推奨方法
-                    .scrollContentBackground(.hidden) // スクロールコンテンツの背景を非表示
-                    .background(Color.white)         // その下に白を適用
+                    .scrollContentBackground(.hidden)
+                    .background(Color.white)
                 }
             }
             .navigationTitle("予定")
