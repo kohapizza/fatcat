@@ -21,6 +21,7 @@ struct MainTabView: View {
     @State private var isTakingScreenshot: Bool = false // Add state for screenshot
 
     @State private var audioPlayer: AVAudioPlayer?
+    @State private var bgmPlayer: AVAudioPlayer? // Add bgmPlayer
     
     // ★追加: ハートのエフェクト表示を制御するプロパティ
     @State private var showHeartEffect: Bool = false
@@ -78,6 +79,13 @@ struct MainTabView: View {
                     .transition(.opacity) // フェードイン・アウトのトランジション
                     .animation(.easeOut(duration: 1.5), value: showHeartEffect) // アニメーションの継続時間
             }
+        }
+        .onAppear {
+            playBackgroundMusic() // Play BGM when the view appears
+        }
+        .onDisappear {
+            bgmPlayer?.stop() // Stop BGM when the view disappears
+            bgmPlayer = nil // Release the player
         }
     }
     
@@ -137,6 +145,34 @@ struct MainTabView: View {
         // 一定時間後にエフェクトを非表示にする
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { // アニメーション時間に合わせて調整
             showHeartEffect = false
+        }
+    }
+
+    // MARK: - Background Music
+    private func playBackgroundMusic() {
+        guard let url = Bundle.main.url(forResource: "bgm", withExtension: "mp3") else {
+            print("Error: bgm.mp3 not found")
+            return
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers]) // Allow mixing with other sounds
+            try session.setActive(true)
+
+            bgmPlayer = try AVAudioPlayer(contentsOf: url)
+            bgmPlayer?.numberOfLoops = -1 // Loop indefinitely
+            bgmPlayer?.volume = 0.5 // Adjust volume as needed
+            bgmPlayer?.prepareToPlay()
+            bgmPlayer?.play()
+
+            if bgmPlayer?.isPlaying == true {
+                print("BGM playing successfully.")
+            } else {
+                print("Problem: BGM not playing after play() call.")
+            }
+        } catch {
+            print("Error playing BGM: \(error.localizedDescription)")
         }
     }
 }

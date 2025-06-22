@@ -174,7 +174,7 @@ struct ContentView: View {
     private func feedCat() {
         // 煮干しがない場合
         guard niboshiCount > 0 else {
-            statusMessage = "煮干しが足りないよ！補充しよう。"
+            statusMessage = "煮干しが足りないよ！補充しよう"
             return
         }
         

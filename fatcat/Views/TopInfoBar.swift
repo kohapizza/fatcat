@@ -23,9 +23,6 @@ struct TopInfoBar: View {
                     Text("🐱 \(cat.name)")
                         .font(.headline)
                         .foregroundColor(.white)
-                    Text("サイズ: \(String(format: "%.1f", cat.size))倍")
-                        .font(.caption)
-                        .foregroundColor(.white)
                 }
                 
                 
