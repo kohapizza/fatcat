@@ -129,7 +129,7 @@ struct LocationSearchSwiftUI: View {
                                     name: mapItem.name ?? "不明な場所",
                                     address: mapItem.placemark.title,
                                     latitude: mapItem.placemark.coordinate.latitude,
-                                    longitude: mapItem.placemark.coordinate.longitude,
+                                    longitude: mapItem.placemark.coordinate.longitude
                                 )
                                 print("選択された場所a: \(selectedLocation?.id)")
                                 // モーダルを閉じる
