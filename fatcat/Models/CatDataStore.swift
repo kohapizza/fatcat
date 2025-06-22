@@ -180,6 +180,10 @@ class CatDataStore: ObservableObject {
             // 1km以内かどうかを返す
             return distanceInMeters <= 1000
         }
+    
+    func getLocationbyId(by id: UUID, in locations: [CatLocation]) -> CatLocation? {
+        return locations.first { $0.id == id }
+    }
 
         // startTimeまたはendTime文字列と日付からDateオブジェクトを作成するヘルパー関数
         private func dateAndTime(from timeString: String, on date: Date) -> Date? {

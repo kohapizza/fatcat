@@ -1,3 +1,7 @@
+//
+// SettingView.swift
+//
+
 import Foundation
 import SwiftUI
 import MapKit

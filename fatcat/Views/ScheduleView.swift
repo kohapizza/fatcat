@@ -1,4 +1,20 @@
+//
+// ScheduleView.swift
+//
+
 import SwiftUI
+import MapKit // MapKitをインポート
+import CoreLocation // CLLocationDegrees を使用するため
+
+// MARK: - CatDataStore Extension (getLocationbyId メソッドの追加)
+// このextensionはCatDataStoreが定義されているファイル（CatScheduleManager.swiftなど）に配置するのが理想的ですが、
+// 一時的にこのファイルに含める場合はここに記述します。
+extension CatDataStore {
+    func getLocationbyId(by id: UUID) -> CatLocation? {
+        return allLocations.first { $0.id == id }
+    }
+}
+
 
 // MARK: - ScheduleRow
 struct ScheduleRow: View {
@@ -9,6 +25,8 @@ struct ScheduleRow: View {
     
     // スケジュール削除時に呼び出すクロージャ
     let onDelete: (UUID) -> Void
+    // 地図表示時に呼び出すクロージャ (CatLocationを受け取る)
+    let onMapTapped: (CatLocation) -> Void
     
     // 削除ボタンを表示するかどうかを管理するState
     @State private var showDeleteButton: Bool = false
@@ -33,8 +51,12 @@ struct ScheduleRow: View {
         return "questionmark.circle.fill"
     }
     
+    private var location: CatLocation? {
+        return allLocations.first(where: { $0.id == schedule.locationId })
+    }
+    
     private var locationName: String {
-        return allLocations.first(where: { $0.id == schedule.locationId })?.name ?? "不明な場所"
+        return location?.name ?? "不明な場所"
     }
     
     var body: some View {
@@ -71,8 +93,22 @@ struct ScheduleRow: View {
             .cornerRadius(10)
             .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
             .contentShape(Rectangle()) // タップ領域を広げる
+            // MARK: - ジェスチャーの変更: 長押しで削除、タップで地図
+            .onLongPressGesture { // `_ in` は必要ありません
+                withAnimation { // アニメーションを付けて表示・非表示
+                    showDeleteButton.toggle()
+                }
+            }
             .onTapGesture {
-                showDeleteButton.toggle()
+                // タップで削除ボタンが消えるようにする
+                withAnimation {
+                    showDeleteButton = false
+                }
+                
+                // 地図表示クロージャを呼び出す
+                if let loc = location {
+                    onMapTapped(loc)
+                }
             }
             
             // 削除ボタン (showDeleteButtonがtrueの場合のみ表示)
@@ -102,6 +138,10 @@ struct ScheduleRow: View {
 // MARK: - 予定表示画面
 struct ScheduleView: View {
     @EnvironmentObject var dataStore: CatDataStore
+    
+    // 地図表示用の状態変数
+    @State private var showingLocationDetailSheet: Bool = false
+    @State private var selectedLocationForMap: CatLocation?
     
     var body: some View {
         NavigationView {
@@ -149,6 +189,10 @@ struct ScheduleView: View {
                                         allLocations: dataStore.allLocations,
                                         onDelete: { scheduleId in
                                             dataStore.allSchedules.removeAll { $0.id == scheduleId }
+                                        },
+                                        onMapTapped: { locationFromRow in // ScheduleRowからCatLocationを受け取る
+                                            selectedLocationForMap = locationFromRow
+                                            showingLocationDetailSheet = true
                                         }
                                     )
                                     .listRowBackground(Color.clear)
@@ -168,6 +212,14 @@ struct ScheduleView: View {
             }
             .navigationTitle("予定")
             .navigationBarTitleDisplayMode(.inline)
+            // 地図表示シート
+            .sheet(isPresented: $showingLocationDetailSheet) {
+                if let location = selectedLocationForMap {
+                    ScheduleLocationMapDetailView(location: location)
+                } else {
+                    Text("場所情報が見つかりません。")
+                }
+            }
         }
     }
     
