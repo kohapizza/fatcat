@@ -11,6 +11,9 @@ import RealityKit
 import Combine
 
 struct ARViewContainer: UIViewRepresentable {
+    @EnvironmentObject var locationManager: LocationManager
+    @EnvironmentObject var dataStore: CatDataStore
+    
     @Binding var cat: Cat
     @Binding var fish: Fish
     @Binding var isFishPlaced: Bool
@@ -19,6 +22,10 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var niboshiCount: Int
     @Binding var isCatPlaced: Bool
     @Binding var isTakingScreenshot: Bool // Add binding for screenshot
+
+    func ifInLocation() -> Bool {
+        return dataStore.ifInLocation(currentLocation: locationManager.currentLocation)
+    }
 
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
