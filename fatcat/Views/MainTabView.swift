@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import AVFoundation
+import UIKit // Import UIKit for screenshot functionality
 
 struct MainTabView: View {
     @Binding var cat: Cat
@@ -17,6 +18,7 @@ struct MainTabView: View {
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
     @State private var isCatPlaced: Bool = false
+    @State private var isTakingScreenshot: Bool = false // Add state for screenshot
 
     @State private var audioPlayer: AVAudioPlayer?
     
@@ -35,7 +37,8 @@ struct MainTabView: View {
                 showFeedButton: $showFeedButton,
                 statusMessage: $statusMessage,
                 niboshiCount: $niboshiCount,
-                isCatPlaced: $isCatPlaced
+                isCatPlaced: $isCatPlaced,
+                isTakingScreenshot: $isTakingScreenshot // Pass the new binding
             )
             .ignoresSafeArea()
             
@@ -52,6 +55,19 @@ struct MainTabView: View {
                 // ボタン類
                 if isCatPlaced {
                     ActionButtons(showFeedButton: $showFeedButton, catIsHungry: cat.isHungry, feedCat: feedCat, niboshiCount: $niboshiCount, statusMessage: $statusMessage)
+                    
+                    // MARK: - Photo Button
+                    Button(action: {
+                        self.isTakingScreenshot = true // Trigger screenshot
+                    }) {
+                        Image(systemName: "camera.fill")
+                            .font(.largeTitle)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.6))
+                            .clipShape(Circle())
+                    }
+                    .padding(.bottom, 20)
                 }
             }
 
@@ -89,8 +105,21 @@ struct MainTabView: View {
         }
 
         do {
+            // AVAudioSessionの設定を追加
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+
             audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.prepareToPlay() // これを追加することで再生の準備を確実にする
             audioPlayer?.play()
+            
+            if audioPlayer?.isPlaying == true { // 再生が開始されたか確認
+                print("Sound playing successfully.")
+            } else {
+                print("Problem: Sound not playing after play() call.")
+            }
+
         } catch {
             print("Error playing sound: \(error.localizedDescription)")
         }

@@ -28,7 +28,7 @@ struct ActionButtons: View {
             // 煮干し補充ボタン
             Button("🛒 煮干しを補充 (+3個)") {
                 niboshiCount += 3
-                statusMessage = "煮干しを補充しました！"
+                statusMessage = "煮干しを補充したよ！"
             }
             .buttonStyle(ShopButtonStyle())
         }

@@ -18,7 +18,8 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var statusMessage: String
     @Binding var niboshiCount: Int
     @Binding var isCatPlaced: Bool
-    
+    @Binding var isTakingScreenshot: Bool // Add binding for screenshot
+
     func makeUIView(context: Context) -> ARView {
         let arView = ARView(frame: .zero)
 
@@ -41,6 +42,14 @@ struct ARViewContainer: UIViewRepresentable {
     func updateUIView(_ uiView: ARView, context: Context) {
         // 猫のサイズが変わったら更新
         context.coordinator.updateCatSize(cat.size)
+        
+        // MARK: - Screenshot Logic
+        if isTakingScreenshot {
+            context.coordinator.takeScreenshot()
+            DispatchQueue.main.async {
+                isTakingScreenshot = false // Reset the flag
+            }
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -177,6 +186,24 @@ extension ARViewContainer {
         // 猫のサイズを更新
         func updateCatSize(_ size: Float) {
             catEntity?.scale = [size, size, size]
+        }
+        
+        // MARK: - Screenshot Function
+        func takeScreenshot() {
+            guard let arView = arView else { return }
+            arView.snapshot(saveToHDR: false) { image in
+                if let image = image {
+                    UIImageWriteToSavedPhotosAlbum(image, self, #selector(self.image(_:didFinishSavingWithError:contextInfo:)), nil)
+                }
+            }
+        }
+        
+        @objc func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+            if let error = error {
+                parent.statusMessage = "写真の保存に失敗しました: \(error.localizedDescription)"
+            } else {
+                parent.statusMessage = "写真を保存しました！"
+            }
         }
     }
 }

@@ -91,28 +91,6 @@ struct ContentView: View {
             .padding()
     }
     
-    // アクションボタン
-    private var actionButtons: some View {
-        VStack(spacing: 12) {
-            // 餌やりボタン
-            // isFishPlaced かつ cat.isHungry の場合に表示
-            if isFishPlaced && cat.isHungry {
-                Button("🐟 餌をあげる") {
-                    feedCat()
-                }
-                .buttonStyle(FeedButtonStyle())
-            }
-            
-            // 煮干し補充ボタン
-            Button("🛒 煮干しを補充 (+3個)") {
-                niboshiCount += 3
-                statusMessage = "煮干しを補充したよ！"
-            }
-            .buttonStyle(ShopButtonStyle())
-        }
-        .padding(.bottom, 30)
-    }
-    
     // 餌やり処理
     private func feedCat() {
         // 煮干しがない場合
