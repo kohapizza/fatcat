@@ -110,17 +110,104 @@ class CatDataStore: ObservableObject {
 
     // MARK: - printSchedulesのID出力形式をUUIDに修正
     public func printSchedules() {
-            print("\n--- allSchedules ---")
-            for schedule in allSchedules {
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateStyle = .short
-                dateFormatter.timeStyle = .none
-                dateFormatter.locale = Locale(identifier: "ja_JP")
-                let formattedDate = dateFormatter.string(from: schedule.date)
+        print("\n--- allSchedules ---")
+        for schedule in allSchedules {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .short
+            dateFormatter.timeStyle = .none
+            dateFormatter.locale = Locale(identifier: "ja_JP")
+            let formattedDate = dateFormatter.string(from: schedule.date)
 
-                // UUIDを文字列として出力し、Optionalではないため安全にunwrapできる
-                print("ID: \(schedule.id.uuidString.prefix(8))..., CatId: \(schedule.catId.uuidString.prefix(8))..., LocationId: \(schedule.locationId.uuidString.prefix(8))..., Date: \(formattedDate), Time: \(schedule.startTime) - \(schedule.endTime)")
+            // UUIDを文字列として出力し、Optionalではないため安全にunwrapできる
+            print("ID: \(schedule.id.uuidString.prefix(8))..., CatId: \(schedule.catId.uuidString.prefix(8))..., LocationId: \(schedule.locationId.uuidString.prefix(8))..., Date: \(formattedDate), Time: \(schedule.startTime) - \(schedule.endTime)")
+        }
+        print("-------------------------------------------\n")
+    }
+    
+    // MARK: - 現在の場所と時間に基づいてスケジュールを評価する関数
+        func ifInLocation(currentLocation: CLLocation?) -> Bool {
+            guard let currentLocation = currentLocation else {
+                print("現在の位置情報が利用できません。")
+                return false // 現在位置が不明な場合はfalseを返す
             }
-            print("-------------------------------------------\n")
+
+            let currentDate = Date()
+            let calendar = Calendar.current
+            let currentTime = DateFormatter.localizedString(from: currentDate, dateStyle: .none, timeStyle: .short) // 例: "15:30"
+
+            // 現在の時刻が含まれるスケジュールをフィルタリング
+            let relevantSchedules = allSchedules.filter { schedule in
+                let scheduleDate = calendar.startOfDay(for: schedule.date) // スケジュールの日の0時0分
+                let today = calendar.startOfDay(for: currentDate)
+
+                // スケジュールのstartTimeとendTimeをDateオブジェクトに変換
+                let startTimeDate = dateAndTime(from: schedule.startTime, on: scheduleDate)
+                let endTimeDate = dateAndTime(from: schedule.endTime, on: scheduleDate)
+
+                // startTimeDateとendTimeDateが両方ともnilでないことを確認
+                guard let startTime = startTimeDate, let endTime = endTimeDate else {
+                    print("スケジュールの時間の解析に失敗しました。")
+                    return false
+                }
+
+                // 現在の時刻がスケジュールの時間範囲内であるか確認
+                let isInTimeRange = (startTime ... endTime).contains(currentDate)
+
+                // スケジュールの日付が今日であるか確認
+                let isToday = scheduleDate == today
+
+                return isToday && isInTimeRange
+            }
+
+            // 関連するスケジュールがない場合はfalseを返す
+            guard let schedule = relevantSchedules.first else {
+                print("現在の時間に含まれるスケジュールはありません。")
+                return false
+            }
+
+            // スケジュールに関連付けられた場所を取得
+            guard let scheduleLocation = allLocations.first(where: { $0.id == schedule.locationId }) else {
+                print("スケジュールに関連付けられた場所が見つかりません。")
+                return false
+            }
+
+            // 場所の座標を作成
+            let scheduleLocationCLLocation = CLLocation(latitude: scheduleLocation.latitude, longitude: scheduleLocation.longitude)
+
+            // 距離を計算 (メートル単位)
+            let distanceInMeters = currentLocation.distance(from: scheduleLocationCLLocation)
+
+            // 1km以内かどうかを返す
+            return distanceInMeters <= 1000
+        }
+
+        // startTimeまたはendTime文字列と日付からDateオブジェクトを作成するヘルパー関数
+        private func dateAndTime(from timeString: String, on date: Date) -> Date? {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "HH:mm" // 時間の形式を "HH:mm" に設定
+            dateFormatter.locale = Locale(identifier: "ja_JP") // 必要に応じてロケールを設定
+
+            // 時間文字列をDateオブジェクトに変換
+            guard let time = dateFormatter.date(from: timeString) else {
+                return nil // 時間文字列が不正な場合はnilを返す
+            }
+
+            let calendar = Calendar.current
+
+            // スケジュールの日付の年、月、日を取得
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
+
+            // 時間のDateオブジェクトから時間と分を取得
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
+
+            // 日付と時間を組み合わせたDateオブジェクトを作成
+            var components = DateComponents()
+            components.year = dateComponents.year
+            components.month = dateComponents.month
+            components.day = dateComponents.day
+            components.hour = timeComponents.hour
+            components.minute = timeComponents.minute
+
+            return calendar.date(from: components)
         }
 }
