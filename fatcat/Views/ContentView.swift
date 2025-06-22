@@ -138,32 +138,32 @@ struct ContentView: View {
     }
     
     // 上部の情報バー
-    private var topInfoBar: some View {
-        HStack {
-            // 猫の情報
-            VStack(alignment: .leading) {
-                Text("🐱 \(cat.name)")
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            
-            Spacer()
-            
-            // 煮干しの個数
-            HStack {
-                Text("🐟")
-                Text("\(niboshiCount)")
-                    .font(.headline)
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Color.blue.opacity(0.8))
-            .cornerRadius(20)
-        }
-        .padding()
-        .background(Color.black.opacity(0.3))
-    }
+//    private var topInfoBar: some View {
+//        HStack {
+//            // 猫の情報
+//            VStack(alignment: .leading) {
+//                Text("🐱 わわわ")
+//                    .font(.headline)
+//                    .foregroundColor(.white)
+//            }
+//            
+//            Spacer()
+//            
+//            // 煮干しの個数
+//            HStack {
+//                Text("🐟")
+//                Text("\(niboshiCount)")
+//                    .font(.headline)
+//                    .foregroundColor(.white)
+//            }
+//            .padding(.horizontal, 12)
+//            .padding(.vertical, 6)
+//            .background(Color.blue.opacity(0.8))
+//            .cornerRadius(20)
+//        }
+//        .padding()
+//        .background(Color.black.opacity(0.3))
+//    }
     
     // 状況メッセージ (ContentViewからは削除される)
     /*

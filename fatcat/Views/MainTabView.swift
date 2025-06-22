@@ -9,6 +9,7 @@ import Foundation
 import SwiftUI
 import AVFoundation
 import UIKit // Import UIKit for screenshot functionality
+import CoreLocation // CoreLocationをインポート
 
 struct MainTabView: View {
     @Binding var cat: Cat
@@ -17,7 +18,7 @@ struct MainTabView: View {
     @Binding var showFeedButton: Bool
     @Binding var niboshiCount: Int
     @State private var isCatPlaced: Bool = false
-    @State private var isTakingScreenshot: Bool = false // Add state for screenshot
+    @State private var isTakingScreenshot: Bool = false // varを削除し、@Stateを追加
 
     @State private var audioPlayer: AVAudioPlayer?
     @State private var bgmPlayer: AVAudioPlayer? // Add bgmPlayer
@@ -30,8 +31,16 @@ struct MainTabView: View {
     @State private var isInLocation: Bool = false // ifInLocationの結果を保持する新しいState
 
     // MARK: - ここから変更
+    // CatDataStoreのインスタンスを追加
+    @ObservedObject var catDataStore: CatDataStore = CatDataStore() // CatDataStoreを初期化
     @State var statusMessage: String = "" // 初期値を空文字列に変更
     // MARK: - ここまで変更
+
+    // 現在地のダミーデータ (実際のアプリではCLLocationManagerから取得)
+    // 例えば、現在の中央公園の緯度経度と仮定します。
+    // 実際のアプリではCLLocationManagerから現在の位置情報を取得してください。
+    let dummyCurrentLocation = CLLocation(latitude: 35.681236, longitude: 139.767125)
+
 
     var body: some View {
         ZStack {
@@ -52,7 +61,8 @@ struct MainTabView: View {
             // UI部分（前面）
             VStack {
                 // 上部の情報表示
-                TopInfoBar(cat: $cat, niboshiCount: $niboshiCount)
+                // ここを修正: catDataStoreのインスタンスを渡す
+                TopInfoBar(catDataStore: catDataStore, niboshiCount: $niboshiCount)
                 
                 Spacer()
                 
@@ -88,7 +98,9 @@ struct MainTabView: View {
         }
         .onAppear {
             // MARK: - ここから変更
-            // ARViewContainerからのisInLocationの値がtrueの場合のみBGMを再生
+            // `isInLocation` の初期値を `catDataStore.ifInLocation` の結果で設定
+            isInLocation = catDataStore.ifInLocation(currentLocation: dummyCurrentLocation)
+
             if isInLocation {
                 playBackgroundMusic()
                 statusMessage = "画面をタップしてぬいぐるみを置いてみよう！" // 初期メッセージを設定
