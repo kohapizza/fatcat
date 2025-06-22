@@ -15,17 +15,23 @@ struct MainTabView: View {
     @Binding var fish: Fish
     @Binding var isFishPlaced: Bool
     @Binding var showFeedButton: Bool
-    @Binding var statusMessage: String
     @Binding var niboshiCount: Int
     @State private var isCatPlaced: Bool = false
     @State private var isTakingScreenshot: Bool = false // Add state for screenshot
 
     @State private var audioPlayer: AVAudioPlayer?
+    @State private var bgmPlayer: AVAudioPlayer? // Add bgmPlayer
     
     // ★追加: ハートのエフェクト表示を制御するプロパティ
     @State private var showHeartEffect: Bool = false
     @State private var heartEffectPosition: CGPoint = .zero
     @State private var heartEffectId: UUID = UUID() // エフェクトを再トリガーするためのID
+
+    @State private var isInLocation: Bool = false // ifInLocationの結果を保持する新しいState
+
+    // MARK: - ここから変更
+    @State var statusMessage: String = "" // 初期値を空文字列に変更
+    // MARK: - ここまで変更
 
     var body: some View {
         ZStack {
@@ -38,7 +44,8 @@ struct MainTabView: View {
                 statusMessage: $statusMessage,
                 niboshiCount: $niboshiCount,
                 isCatPlaced: $isCatPlaced,
-                isTakingScreenshot: $isTakingScreenshot // Pass the new binding
+                isTakingScreenshot: $isTakingScreenshot, // Pass the new binding
+                isInLocation: $isInLocation // 新しいバインディングを渡す
             )
             .ignoresSafeArea()
             
@@ -77,6 +84,33 @@ struct MainTabView: View {
                     .id(heartEffectId) // IDを変更することでViewを再生成し、アニメーションを再実行
                     .transition(.opacity) // フェードイン・アウトのトランジション
                     .animation(.easeOut(duration: 1.5), value: showHeartEffect) // アニメーションの継続時間
+            }
+        }
+        .onAppear {
+            // MARK: - ここから変更
+            // ARViewContainerからのisInLocationの値がtrueの場合のみBGMを再生
+            if isInLocation {
+                playBackgroundMusic()
+                statusMessage = "画面をタップしてぬいぐるみを置いてみよう！" // 初期メッセージを設定
+            } else {
+                print("Not in location, BGM will not play.")
+                statusMessage = "ここには猫はいないみたい…" // 位置情報がfalseの場合のメッセージ
+            }
+            // MARK: - ここまで変更
+        }
+        .onDisappear {
+            bgmPlayer?.stop() // Stop BGM when the view disappears
+            bgmPlayer = nil // Release the player
+        }
+        .onChange(of: isInLocation) { newValue in
+            if newValue {
+                playBackgroundMusic()
+                statusMessage = "画面をタップしてぬいぐるみを置いてみよう！" // 位置情報がtrueになった場合のメッセージ
+            } else {
+                bgmPlayer?.stop()
+                bgmPlayer = nil
+                print("Location changed, stopping BGM.")
+                statusMessage = "ここには猫はいないみたい…" // 位置情報がfalseになった場合のメッセージ
             }
         }
     }
@@ -137,6 +171,39 @@ struct MainTabView: View {
         // 一定時間後にエフェクトを非表示にする
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { // アニメーション時間に合わせて調整
             showHeartEffect = false
+        }
+    }
+
+    // MARK: - Background Music
+    private func playBackgroundMusic() {
+        // BGMがすでに再生中の場合は何もしない
+        if bgmPlayer?.isPlaying == true {
+            return
+        }
+        
+        guard let url = Bundle.main.url(forResource: "bgm", withExtension: "mp3") else {
+            print("Error: bgm.mp3 not found")
+            return
+        }
+
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [.mixWithOthers]) // Allow mixing with other sounds
+            try session.setActive(true)
+
+            bgmPlayer = try AVAudioPlayer(contentsOf: url)
+            bgmPlayer?.numberOfLoops = -1 // Loop indefinitely
+            bgmPlayer?.volume = 0.5 // Adjust volume as needed
+            bgmPlayer?.prepareToPlay()
+            bgmPlayer?.play()
+
+            if bgmPlayer?.isPlaying == true {
+                print("BGM playing successfully.")
+            } else {
+                print("Problem: BGM not playing after play() call.")
+            }
+        } catch {
+            print("Error playing BGM: \(error.localizedDescription)")
         }
     }
 }

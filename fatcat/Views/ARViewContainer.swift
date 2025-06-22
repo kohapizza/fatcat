@@ -22,6 +22,7 @@ struct ARViewContainer: UIViewRepresentable {
     @Binding var niboshiCount: Int
     @Binding var isCatPlaced: Bool
     @Binding var isTakingScreenshot: Bool // Add binding for screenshot
+    @Binding var isInLocation: Bool // MainTabViewにifInLocationの結果を渡すための新しいバインディング
 
     func ifInLocation() -> Bool {
         return dataStore.ifInLocation(currentLocation: locationManager.currentLocation)
@@ -50,7 +51,11 @@ struct ARViewContainer: UIViewRepresentable {
         // 猫のサイズが変わったら更新
         context.coordinator.updateCatSize(cat.size)
         
-        // MARK: - Screenshot Logic
+        // ifInLocationの結果を更新し、MainTabViewに伝える
+        DispatchQueue.main.async {
+            self.isInLocation = self.ifInLocation()
+        }
+
         if isTakingScreenshot {
             context.coordinator.takeScreenshot()
             DispatchQueue.main.async {
@@ -81,6 +86,16 @@ extension ARViewContainer {
         // 画面タップ時の処理
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let arView = arView else { return }
+
+            // MARK: - ここから変更
+            // ifInLocationがfalseの場合はぬいぐるみを配置しない
+            if !parent.isInLocation {
+                DispatchQueue.main.async {
+                    self.parent.statusMessage = "猫がいないみたい"
+                }
+                return
+            }
+            // MARK: - ここまで変更
 
             // 魚がまだ配置されていない場合
             if !parent.isFishPlaced {
@@ -195,7 +210,6 @@ extension ARViewContainer {
             catEntity?.scale = [size, size, size]
         }
         
-        // MARK: - Screenshot Function
         func takeScreenshot() {
             guard let arView = arView else { return }
             arView.snapshot(saveToHDR: false) { image in

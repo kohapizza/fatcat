@@ -27,7 +27,10 @@ struct ContentView: View {
     // AR関連の状態
     @State private var isFishPlaced = false
     @State private var showFeedButton = false
-    @State private var statusMessage = "画面をタップしてぬいぐるみを置いてみよう！"
+    // MARK: - ここから変更
+    // MainTabViewが自身のロジックでstatusMessageを管理するため、ここでは初期値を設定しない
+    // @State private var statusMessage = "画面をタップしてぬいぐるみを置いてみよう！"
+    // MARK: - ここまで変更
     
     
     var body: some View {
@@ -100,7 +103,10 @@ struct ContentView: View {
                 fish: $fish,
                 isFishPlaced: $isFishPlaced,
                 showFeedButton: $showFeedButton,
-                statusMessage: $statusMessage,
+                // MARK: - ここから変更
+                // MainTabViewで管理されるため、statusMessageは渡さない
+                // statusMessage: $statusMessage,
+                // MARK: - ここまで変更
                 niboshiCount: $niboshiCount
             )
             .overlay(
@@ -159,7 +165,8 @@ struct ContentView: View {
         .background(Color.black.opacity(0.3))
     }
     
-    // 状況メッセージ
+    // 状況メッセージ (ContentViewからは削除される)
+    /*
     private var statusMessageView: some View {
         Text(statusMessage)
             .font(.system(size: 16, weight: .medium))
@@ -169,19 +176,28 @@ struct ContentView: View {
             .cornerRadius(10)
             .padding()
     }
+    */
     
     // 餌やり処理
     private func feedCat() {
         // 煮干しがない場合
         guard niboshiCount > 0 else {
-            statusMessage = "煮干しが足りないよ！補充しよう。"
+            // MARK: - ここから変更
+            // statusMessageはMainTabViewのプロパティなので、直接アクセスできない
+            // MainTabViewのfeedCat関数がstatusMessageを更新するため、ここは削除
+            // statusMessage = "煮干しが足りないよ！補充しよう"
+            // MARK: - ここまで変更
             return
         }
         
         // 餌やり実行
         niboshiCount -= 1
         cat.feed()
-        statusMessage = "にゃーん！猫が大きくなったよ！"
+        // MARK: - ここから変更
+        // statusMessageはMainTabViewのプロパティなので、直接アクセスできない
+        // MainTabViewのfeedCat関数がstatusMessageを更新するため、ここは削除
+        // statusMessage = "にゃーん！猫が大きくなったよ！"
+        // MARK: - ここまで変更
         showFeedButton = false
     }
     
@@ -192,7 +208,11 @@ struct ContentView: View {
             if isFishPlaced && !cat.isHungry {
                 cat.isHungry = true
                 showFeedButton = true
-                statusMessage = "猫がお腹を空かせているみたい"
+                // MARK: - ここから変更
+                // statusMessageはMainTabViewのプロパティなので、直接アクセスできない
+                // MainTabViewのfeedCat関数がstatusMessageを更新するため、ここは削除
+                // statusMessage = "猫がお腹を空かせているみたい"
+                // MARK: - ここまで変更
             }
         }
     }
@@ -201,7 +221,11 @@ struct ContentView: View {
     private func resetData() {
         cat = Cat()
         niboshiCount = 5
-        statusMessage = "データをリセットしました"
+        // MARK: - ここから変更
+        // statusMessageはMainTabViewのプロパティなので、直接アクセスできない
+        // MainTabViewのonAppear/onChangeでメッセージが設定されるため、ここでの設定は不要
+        // statusMessage = "データをリセットしました"
+        // MARK: - ここまで変更
         selectedLocation = nil // 位置情報もリセット
     }
 }
