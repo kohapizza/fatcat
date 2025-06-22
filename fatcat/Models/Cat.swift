@@ -23,6 +23,13 @@ struct Cat {
     }
 }
 
+struct CatType {
+    let name: String
+    let emoji: String
+    let description: String
+    let unlocked: Bool
+}
+
 struct Fish {
     var size: Float = 0.1
 }
