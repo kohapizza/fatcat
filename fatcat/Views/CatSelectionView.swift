@@ -83,21 +83,6 @@ struct CatSelectionView: View {
                         }
                         .padding(.horizontal, 20)
                     }
-                    
-                    // 解放条件
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("新しい猫を解放するには")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .padding(.horizontal, 20)
-                        
-                        VStack(spacing: 8) {
-                            UnlockConditionRow(icon: "fish.fill", condition: "煮干しを100個あげる", progress: 0.7)
-                            UnlockConditionRow(icon: "clock.fill", condition: "7日連続で猫に会う", progress: 0.4)
-                            UnlockConditionRow(icon: "heart.fill", condition: "猫を5匹同時に飼う", progress: 0.2)
-                        }
-                        .padding(.horizontal, 20)
-                    }
                 }
                 .padding(.vertical, 20)
             }
@@ -179,5 +164,9 @@ struct CatSelectionCard: View {
 
 
 
-
+struct CatSelectionView_Previews: PreviewProvider {
+    static var previews: some View {
+        CatSelectionView()
+    }
+}
 

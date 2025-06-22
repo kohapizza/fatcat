@@ -72,7 +72,6 @@ struct SettingsTabView: View {
                     .background(Color(.systemGray6))
                     .cornerRadius(16)
                     
-                    Spacer()
                 }
                 .padding(.horizontal, 20)
                 
