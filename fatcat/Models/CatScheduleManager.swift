@@ -19,9 +19,11 @@ struct CatModel: Identifiable, Codable, Hashable {
 }
 
 struct CatTypeModel: Identifiable, Codable, Hashable {
-    let id: Int // typeId
-    let fileName: String
-    let catType: String // ADDED: "黒猫", "三毛猫", "白猫"などの種類
+    let id: Int
+    let name: String
+    let emoji: String
+    let description: String
+    let unlocked: Bool
 }
 
 struct CatSchedule: Identifiable, Codable {

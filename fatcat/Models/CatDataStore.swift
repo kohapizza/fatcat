@@ -81,9 +81,12 @@ class CatDataStore: ObservableObject {
 
     static var defaultCatTypes: [CatTypeModel] {
         [
-            CatTypeModel(id: 1, fileName: "cat.fill", catType: "黒猫"),
-            CatTypeModel(id: 2, fileName: "cat.circle.fill", catType: "三毛猫"),
-            CatTypeModel(id: 3, fileName: "pawprint.fill", catType: "白猫")
+            CatTypeModel(id: 1, name: "白猫", emoji: "🐱", description: "清楚で上品な白猫", unlocked: true),
+            CatTypeModel(id: 2, name: "茶トラ", emoji: "🐯", description: "元気いっぱいな茶トラ", unlocked: true),
+            CatTypeModel(id: 3, name: "黒猫", emoji: "🐈‍⬛", description: "神秘的な黒猫", unlocked: true),
+            CatTypeModel(id: 4, name: "三毛猫", emoji: "🐈", description: "カラフルな三毛猫", unlocked: false),
+            CatTypeModel(id: 5, name: "ペルシャ猫", emoji: "😺", description: "高貴なペルシャ猫", unlocked: false),
+            CatTypeModel(id: 6, name: "シャム猫", emoji: "😸", description: "エレガントなシャム猫", unlocked: false)
         ]
     }
 
