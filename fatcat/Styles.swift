@@ -31,7 +31,7 @@ struct ShopButtonStyle: ButtonStyle {
             .font(.system(size: 14))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(Color.green.opacity(0.8))
+            .background(Color.blue.opacity(0.8))
             .foregroundColor(.white)
             .cornerRadius(10)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)

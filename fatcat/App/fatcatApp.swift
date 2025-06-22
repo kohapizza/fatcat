@@ -9,9 +9,14 @@ import SwiftUI
 
 @main
 struct fatcatApp: App {
+    @StateObject var dataStore = CatDataStore()
+    @StateObject var locationManager = LocationManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(dataStore)
+                .environmentObject(locationManager)
         }
     }
 }
