@@ -1,10 +1,3 @@
-//
-//  test.swift
-//  fatcat
-//
-//  Created by 佐伯小遥 on 2025/06/21.
-//
-
 import Foundation
 import SwiftUI
 import MapKit
@@ -116,29 +109,35 @@ struct LocationTimeSettingView: View {
                         }
                         
                         if let location = selectedLocation {
-                            Text("選択された位置情報: \(location.name)")
-                                .font(.headline)
-                            Text("住所: \(location.address ?? "なし")")
-                                .font(.subheadline)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("選択された位置情報: \(location.name)")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                Text("住所: \(location.address ?? "なし")")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                         } else {
                             Text("位置情報が選択されていません。")
                                 .font(.headline)
+                                .foregroundColor(.secondary)
                                 .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         }
-                        
                         
                         Button("位置情報を設定する") {
                             showingMyLocationSearch = true
                         }
-                        .buttonStyle(ShopButtonStyle()) // ShopButtonStyleは別途定義されているものとします
+                        .buttonStyle(ShopButtonStyle())
                         .sheet(isPresented: $showingMyLocationSearch) {
-                            // 位置検索ビュー
                             LocationSearchSwiftUI(selectedLocation: $selectedLocation)
                         }
                         
-                        
                         VStack(spacing: 12) {
-                            
                             // ミニマップ表示
                             Map(coordinateRegion: $region, annotationItems: [MapPin(coordinate: locationCoordinate)]) { pin in
                                 MapAnnotation(coordinate: pin.coordinate) {
@@ -160,46 +159,7 @@ struct LocationTimeSettingView: View {
                     Spacer(minLength: 20)
                     
                     // 設定ボタン
-                    Button(action: {
-                        // 設定を保存する処理
-                        print("設定を保存: \(selectedDate), \(startTime)-\(endTime), \(selectedLocation)")
-                        // 時間を文字列にフォーマット
-                            let dateFormatter = DateFormatter()
-                            dateFormatter.dateFormat = "HH:mm"
-                            let startTimeString = dateFormatter.string(from: startTime)
-                            let endTimeString = dateFormatter.string(from: endTime)
-
-                            // 新しいCatScheduleオブジェクトを作成
-                            if let selectedLocation = selectedLocation {
-                                let newSchedule = CatSchedule(
-                                    id: UUID(),
-                                    catId: UUID(),
-                                    locationId: selectedLocation.id,
-                                    date: selectedDate,
-                                    startTime: startTimeString,
-                                    endTime: endTimeString
-                                )
-                                let newLocation = CatLocation(
-                                    id: selectedLocation.id,
-                                    name: selectedLocation.name,
-                                    address: selectedLocation.address,
-                                    latitude: selectedLocation.latitude,
-                                    longitude: selectedLocation.longitude
-                                )
-
-                                // CatDataStoreに新しいスケジュールを追加
-                                // todo: ここで猫を配置する処理を実装
-                                dataStore.allSchedules.append(newSchedule)
-                                dataStore.allLocations.append(newLocation)
-                                print("予定を追加: \(newSchedule)")
-                                dismiss() // 画面を閉じる
-                            }
-                        else {
-                            alertMessage = "猫を配置する場所が選択されていません。場所を選択してください。"
-                            showAlert = true
-                        }
-                            showingLocationSearch = false
-                    }) {
+                    Button(action: saveCatSchedule) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                             Text("猫を配置する")
@@ -216,16 +176,90 @@ struct LocationTimeSettingView: View {
                             )
                         )
                         .cornerRadius(12)
-                        .shadow(color: .orange.opacity(0.3), radius: 5, x: 0, y: 2)
+                        .shadow(color: .blue.opacity(0.3), radius: 5, x: 0, y: 2)
                     }
+                    .disabled(selectedLocation == nil) // 場所が選択されていない場合は無効化
+                    .opacity(selectedLocation == nil ? 0.6 : 1.0)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .alert("エラー", isPresented: $showAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(alertMessage)
+            }
+            .onChange(of: selectedLocation) { newLocation in
+                // 選択された場所に基づいてマップの位置を更新
+                if let location = newLocation {
+                    locationCoordinate = CLLocationCoordinate2D(
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    )
+                    region = MKCoordinateRegion(
+                        center: locationCoordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                    )
+                }
+            }
         }
     }
     
+    // 猫のスケジュール保存処理を別メソッドに分離
+    private func saveCatSchedule() {
+        // 場所が選択されているかチェック
+        guard let selectedLocation = selectedLocation else {
+            alertMessage = "猫を配置する場所が選択されていません。場所を選択してください。"
+            showAlert = true
+            return
+        }
+        
+        // 時間の妥当性チェック
+        if startTime >= endTime {
+            alertMessage = "開始時間は終了時間より前に設定してください。"
+            showAlert = true
+            return
+        }
+        
+        // 時間を文字列にフォーマット
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "HH:mm"
+        let startTimeString = dateFormatter.string(from: startTime)
+        let endTimeString = dateFormatter.string(from: endTime)
+        
+        // 新しいCatScheduleオブジェクトを作成
+        let newSchedule = CatSchedule(
+            id: UUID(),
+            catId: UUID(),
+            locationId: selectedLocation.id,
+            date: selectedDate,
+            startTime: startTimeString,
+            endTime: endTimeString
+        )
+        
+        // 場所が既に存在しない場合は追加
+        let locationExists = dataStore.allLocations.contains { $0.id == selectedLocation.id }
+        if !locationExists {
+            let newLocation = CatLocation(
+                id: selectedLocation.id,
+                name: selectedLocation.name,
+                address: selectedLocation.address,
+                latitude: selectedLocation.latitude,
+                longitude: selectedLocation.longitude
+            )
+            dataStore.allLocations.append(newLocation)
+        }
+        
+        // CatDataStoreに新しいスケジュールを追加
+        dataStore.allSchedules.append(newSchedule)
+        
+        print("猫のスケジュールを保存しました: \(newSchedule)")
+        
+        // モーダルを閉じる
+        showingLocationSearch = false
+        dismiss()
+    }
 }
 
 struct MapPin: Identifiable {

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var locationManager: LocationManager
     // 猫の状態
     @State private var cat = Cat()
     // 魚の状態 (新しく追加)
@@ -30,8 +31,6 @@ struct ContentView: View {
     @State private var showFeedButton = false
     @State private var statusMessage = "画面をタップして魚のぬいぐるみを配置してください"
     
-    // 現在地を取得するためのバインディング
-    @State private var locationManager = LocationManager()
     
     var body: some View {
         ZStack {
@@ -53,11 +52,14 @@ struct ContentView: View {
             VStack(alignment: .leading) {
                 Spacer()
                 HStack {
-                    // Item 1
-                    TabButton(title: "設定", isSelected: selectedTab == 0) {
+                    // 設定タブ
+                    TabButton(
+                        title: "設定",
+                        iconName: "gearshape.fill",
+                        isSelected: selectedTab == 0
+                    ) {
                         selectedTab = 0
                     }
-                    
                     
                     // 中央の目立つボタン
                     Button(action: {
@@ -76,12 +78,14 @@ struct ContentView: View {
                     }
                     .offset(y: -15) // 少し上に配置
                     
-                    // Item 0
-                    TabButton(title: "予定", isSelected: selectedTab == 2) {
+                    // 予定タブ
+                    TabButton(
+                        title: "予定",
+                        iconName: "calendar.circle.fill",
+                        isSelected: selectedTab == 2
+                    ) {
                         selectedTab = 2
                     }
-                    
-                    
                 }
                 .background(Color(.systemGray6))
             }
@@ -231,29 +235,26 @@ struct ContentView: View {
 
 struct TabButton: View {
     let title: String
+    let iconName: String
     let isSelected: Bool
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
-                HStack(spacing: 2) {
-                    ForEach(0..<3) { _ in
-                        RoundedRectangle(cornerRadius: 1)
-                            .fill(isSelected ? Color.blue : Color.gray)
-                            .frame(width: 8, height: 2)
-                    }
-                }
+            VStack(spacing: 6) {
+                Image(systemName: iconName)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(isSelected ? .blue : .gray)
                 
                 Text(title)
                     .font(.caption)
                     .foregroundColor(isSelected ? .blue : .gray)
             }
+            .padding(.vertical, 8)
         }
         .frame(maxWidth: .infinity)
     }
 }
-
 
 struct ContentView_Preview: PreviewProvider {
     static var previews: some View {
