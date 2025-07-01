@@ -1,7 +1,7 @@
 # 🐈 fatcat
-<img width="900" alt="fatcat" src="https://github.com/user-attachments/assets/7f142830-6018-4622-b273-23c03ba6e05a" />
+<img width="900" src="https://github.com/user-attachments/assets/7f142830-6018-4622-b273-23c03ba6e05a" />
 
-<img width="900" alt="スクリーンショット 2025-06-22 15 57 35" src="https://github.com/user-attachments/assets/e82ceb7c-e555-4703-903f-31b34080dfd2" />
+<img width="900" src="https://github.com/user-attachments/assets/e82ceb7c-e555-4703-903f-31b34080dfd2" />
 
 
 
